@@ -13,6 +13,11 @@
   observation-example.xml
   questionnaire-example.xml
   valueset-example-expansion.xml
+  parameters-example-types.xml
+  patient-example-period.xml
+  explanationofbenefit-example.json
+  appointment-examplereq.json
+  patient-container-example.json
 
   The test schema for this test suite is maintained in the FHIRPath specification repository:
   https://github.com/HL7/FHIRPath/blob/master/tests/testSchema.xsd
@@ -1528,6 +1533,12 @@ Any text enclosed within is ignored
 
 	<group name="miscEngineTests">
 		<test name="testContainedId" inputfile="patient-container-example.json"><expression>contained.id</expression><output type="id">1</output></test>
+
+		<test name="testPrimitiveExtensions" inputfile="patient-name-extensions.json">
+		  <expression>Patient.name.given.select($this.hasValue())</expression>
+		  <output type="boolean">false</output>
+		  <output type="boolean">true</output>
+		</test>
 	</group>
 
 </tests>
