@@ -622,7 +622,7 @@ function doInvoke(ctx, fnName, data, rawParams){
         res = invoc.fn.apply(ctx, params);
         return util.resolveAndArraify(res);
       } else {
-        console.log(fnName + " wrong arity: got " + paramsNumber );
+        console.warn(fnName + " wrong arity: got " + paramsNumber );
         return [];
       }
     }
@@ -661,7 +661,7 @@ function infixInvoke(ctx, fnName, data, rawParams){
       var res = invoc.fn.apply(ctx, params);
       return util.arraify(res);
     } else {
-      console.log(fnName + " wrong arity: got " + paramsNumber );
+      console.warn(fnName + " wrong arity: got " + paramsNumber );
       return [];
     }
   } else {

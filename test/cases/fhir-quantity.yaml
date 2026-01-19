@@ -23,11 +23,11 @@ tests:
       - desc: '** test'
         inputfile: patient-example.json
         expression: '''1 day''.toQuantity() = 1 ''d'''
-        result: []
+        result: [true]
       - desc: '** test'
         inputfile: patient-example.json
         expression: '''1 \''wk\''''.toQuantity() = 1 week'
-        result: []
+        result: [true]
       - desc: '** test'
         inputfile: patient-example.json
         expression: '''1.0''.toQuantity() ~ 1 ''1'''

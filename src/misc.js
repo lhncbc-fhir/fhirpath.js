@@ -162,8 +162,53 @@ engine.toLong = function(coll){
 
 const quantityRegex = /^((\+|-)?\d+(\.\d+)?)\s*(('[^']+')|([a-zA-Z]+))?$/,
   quantityRegexMap = {value:1,unit:5,time:6};
+
+
+/**
+ * Converts a value from a collection to a FP_Quantity object, optionally
+ * converting to a specified unit.
+ *
+ * This function takes a collection containing a single value and attempts to
+ * convert it to a FP_Quantity object. The input value (which may be wrapped to
+ * a ResourceNode) can be a number, boolean, string (with quantity notation), or
+ * an existing FP_Quantity instance. If a target unit is specified, the function
+ * will also perform unit conversion.
+ * See:
+ *  https://hl7.org/fhirpath/#toquantityunit-string-quantity
+ *  https://build.fhir.org/ig/HL7/FHIRPath/#toquantityunit--string--quantity
+ *
+ * @param {Array} coll - A collection that should contain a single element to
+ *  convert. If the collection contains multiple items, an error will be thrown.
+ *  If the collection is empty, the result will be an empty collection (undefined).
+ * @param {string} [toUnit] - Optional target unit for conversion. FHIRPath
+ *  calendar duration units (e.g., 'seconds', 'years', 'months') are also
+ *  supported.
+ *
+ * @returns {FP_Quantity|null} Returns:
+ *  - A FP_Quantity object representing the converted value
+ *  - null if the input collection is empty or the value cannot be converted
+ *
+ * @throws {Error} If the collection contains multiple items (via checkSingleton)
+ *
+ * @description
+ * Conversion rules:
+ * - **Number**: Converted to a quantity with unit '1' (dimensionless)
+ * - **Boolean**: Converted to 1 (true) or 0 (false) with unit '1'
+ * - **String**: Parsed using quantityRegex to extract value and unit
+ *   - String must match quantity notation (e.g., "5.0 'mg'", "10 days")
+ *   - UCUM unit codes in strings must be surrounded by single quotes
+ *   - Supported calendar duration units are determined by the presence of
+ *     the corresponding key in FP_Quantity.mapTimeUnitsToUCUMCode
+ * - **FP_Quantity**: Used as-is (may still be converted to toUnit if specified)
+ *
+ * Unit conversion restrictions:
+ * - Conversion between calendar durations and definite quantity durations
+ *   above days (and weeks) (the threshold is defined by
+ *   FP_Quantity._maxComparableCalendarDuration) is not allowed.
+ * - If such a conversion is attempted, the function returns null.
+ */
 engine.toQuantity = function (coll, toUnit) {
-  let result;
+  let result = null;
 
   // If the input collection contains multiple items, the evaluation of
   // the expression will end and signal an error to the calling environment.
@@ -171,25 +216,6 @@ engine.toQuantity = function (coll, toUnit) {
   // Note: An undefined result will be converted to an empty collection in
   // the calling function.
   if (checkSingleton(coll, 'toQuantity')) {
-    if (toUnit) {
-      const thisUnitInSeconds = FP_Quantity._calendarDuration2Seconds[this.unit];
-      const toUnitInSeconds = FP_Quantity._calendarDuration2Seconds[toUnit];
-      if (
-        !thisUnitInSeconds !== !toUnitInSeconds &&
-        (thisUnitInSeconds > 1 || toUnitInSeconds > 1)
-      ) {
-        // Conversion from calendar duration quantities greater than seconds to
-        // time-valued UCUM quantities greater than seconds or vice versa is not
-        // allowed.
-        return null;
-      }
-
-      // Surround UCUM unit code in the toUnit parameter with single quotes
-      if (!FP_Quantity.mapTimeUnitsToUCUMCode[toUnit]) {
-        toUnit = `'${toUnit}'`;
-      }
-    }
-
     const v = util.valDataConverted(coll[0]);
     const type = typeof v;
     let quantityRegexRes;
@@ -212,6 +238,16 @@ engine.toQuantity = function (coll, toUnit) {
     }
 
     if (result && toUnit && result.unit !== toUnit) {
+      if ( result.isNotComparableDurations(toUnit) ) {
+        // If the durations cannot be compared, the conversion is not possible.
+        return null;
+      }
+
+      // Surround UCUM unit code in the toUnit parameter with single quotes
+      if (!FP_Quantity.mapTimeUnitsToUCUMCode[toUnit]) {
+        toUnit = `'${toUnit}'`;
+      }
+
       result = FP_Quantity.convUnitTo(result.unit, result.value, toUnit);
     }
   }

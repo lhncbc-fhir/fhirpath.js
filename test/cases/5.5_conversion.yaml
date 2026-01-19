@@ -151,9 +151,9 @@ tests:
       expression: "time.toTime() != @T18:15"
       result: [true]
 
-  - desc: '** Null to time'
-    expression: Functions.collWithNullsAndTrue[0].toTime()
-    result: []
+    - desc: '** Null to time'
+      expression: Functions.collWithNullsAndTrue[0].toTime()
+      result: []
 
   - desc: '** Null to date'
     expression: Functions.collWithNullsAndTrue[0].toDate()
@@ -179,7 +179,7 @@ tests:
     expression: ('0' | '1').toBoolean()
     error: [true]
 
-  - desc: '5.5.4. toString() : string'
+  - 'group: 5.5.4. toString() : string':
 # If the input collection contains a single item, this function will return a single string if:
 # the item in the input collection is a string
 # the item in the input collection is an integer, decimal, time or dateTime the output will contain its string representation
@@ -208,108 +208,109 @@ tests:
 # Note that for partial dates and times, the result will only be specified to the level of precision in the value being converted.
 # In all other cases, the function will return an empty collection.
 
-  - desc: '** bool to string'
-    expression: attrtrue.toString()
-    result: ['true']
+    - desc: '** bool to string'
+      expression: attrtrue.toString()
+      result: ['true']
 
-  - desc: '** bool to string'
-    expression: attrdec.toString()
-    result: ['101.99']
+    - desc: '** bool to string'
+      expression: attrdec.toString()
+      result: ['101.99']
 
-  - desc: '** null to string'
-    inputfile: patient-example-2.json
-    model: r4
-    expression: Patient.name.given[0].toString()
-    result: []
+    - desc: '** null to string'
+      inputfile: patient-example-2.json
+      model: r4
+      expression: Patient.name.given[0].toString()
+      result: []
 
-  - desc: '** null date to string'
-    inputfile: patient-example-2.json
-    model: r4
-    expression: Patient.birthDate.toString()
-    result: []
+    - desc: '** null date to string'
+      inputfile: patient-example-2.json
+      model: r4
+      expression: Patient.birthDate.toString()
+      result: []
 
-  - desc: '** Long to string'
-    expression: 101L.toString() = '101'
-    result: [true]
+    - desc: '** Long to string'
+      expression: 101L.toString() = '101'
+      result: [true]
 
-  - desc: '** collection to string'
-    expression: (5 | 6).toString()
-    error: [true]
+    - desc: '** collection to string'
+      expression: (5 | 6).toString()
+      error: [true]
 
 
-  - desc: '5.5.7. toQuantity([unit:string]) : Quantity'
-  - desc: '** string to Quantity'
-    inputfile: patient-example.json
-    expression: '''1 \''wk\''''.toQuantity() = 7 days'
-    result: []
-  - desc: '** string to Quantity'
-    inputfile: patient-example.json
-    expression: '''1 \''wk\''''.toQuantity(''days'')'
-    result: []
-  - desc: '** string to Quantity'
-    inputfile: patient-example.json
-    expression: "'1 \\'wk\\''.toQuantity('d') = 7 days"
-    result: []
-  - desc: '** string to Quantity - result UCUM unit code must be surrounded with single quotes'
-    inputfile: patient-example.json
-    expression: "'1 \\'wk\\''.toQuantity('d').toString() = '7 \\'d\\''"
-    result:
-      - true
-  - desc: '** calendar duration conversion factor'
-    inputfile: patient-example.json
-    expression: '''1 year''.toQuantity() != 1 ''a'''
-    result:
-      - true
-  - desc: '** calendar duration conversion factor'
-    inputfile: patient-example.json
-    expression: '''1 year''.toQuantity() ~ 1 ''a'''
-    result:
-      - true
-  - desc: '** Duration to Quantity'
-    inputfile: medicationrequest-example.json
-    expression: "MedicationRequest.dispenseRequest.expectedSupplyDuration.toQuantity() = 3 days"
-    model: 'r4'
-    result:
-      - true
-  - desc: '** UCUM units'
-    inputfile: patient-example.json
-    expression: "'1 \\'cm\\''.toQuantity('mm').value = 10"
-    result:
-      - true
-  - desc: '** Invalid conversion'
-    inputfile: patient-example.json
-    expression: "'1 \\'cm\\''.toQuantity('g')"
-    result: []
-  - desc: '** Implicit to quantity + toQuantity'
-    inputfile: observation-example.json
-    model: 'r4'
-    expression: Observation.value.toQuantity('kg') ~ 84 'kg'
-    result:
-      - true
-  - desc: '** Invalid conversion'
-    inputfile: patient-example.json
-    expression: '''1 \''wk\''''.toQuantity(''nonexistent-unit'')'
-    result: []
-  - desc: '** Invalid conversion'
-    inputfile: patient-example.json
-    expression: '''some not quantity string''.toQuantity()'
-    result: []
+  - 'group: 5.5.7. toQuantity([unit:string]) : Quantity':
+    - 'group: string to Quantity':
+      - expression: '''1 \''wk\''''.toQuantity() = 7 days'
+        result: [true]
+      - expression: '''1 \''wk\''''.toQuantity(''days'')'
+        result: ['7 days']
+      - expression: "'1 \\'wk\\''.toQuantity('d') = 7 days"
+        result: [true]
+      - expression: "'1 \\'mo\\''.toQuantity('month')"
+        result: []
+      - expression: "'1 \\'mo\\''.toQuantity('days')"
+        result: []
+      - expression: "'1 nothing'.toQuantity('something')"
+        result: []
+      - expression: "'12 months'.toQuantity('year') = 1 year"
+        result: [true]
+      - desc: '** result UCUM unit code must be surrounded with single quotes'
+        expression: "'1 \\'wk\\''.toQuantity('d').toString() = '7 \\'d\\''"
+        result:
+          - true
+    - 'group: calendar duration conversion factor':
+      - inputfile: patient-example.json
+        expression: '''1 year''.toQuantity() != 1 ''a'''
+        result:
+          - true
+      - inputfile: patient-example.json
+        expression: '''1 year''.toQuantity() ~ 1 ''a'''
+        result:
+          - true
+    - desc: '** Duration to Quantity'
+      inputfile: medicationrequest-example.json
+      expression: "MedicationRequest.dispenseRequest.expectedSupplyDuration.toQuantity() = 3 days"
+      model: 'r4'
+      result:
+        - true
+    - desc: '** UCUM units'
+      inputfile: patient-example.json
+      expression: "'1 \\'cm\\''.toQuantity('mm').value = 10"
+      result:
+        - true
+    - desc: '** Invalid conversion'
+      inputfile: patient-example.json
+      expression: "'1 \\'cm\\''.toQuantity('g')"
+      result: []
+    - desc: '** Implicit to quantity + toQuantity'
+      inputfile: observation-example.json
+      model: 'r4'
+      expression: Observation.value.toQuantity('kg') ~ 84 'kg'
+      result:
+        - true
+    - desc: '** Invalid conversion'
+      inputfile: patient-example.json
+      expression: '''1 \''wk\''''.toQuantity(''nonexistent-unit'')'
+      result: []
+    - desc: '** Invalid conversion'
+      inputfile: patient-example.json
+      expression: '''some not quantity string''.toQuantity()'
+      result: []
 
-  - desc: '** Null to Quantity'
-    expression: Functions.collWithNullsAndTrue[0].toQuantity()
-    result: []
+    - desc: '** Null to Quantity'
+      expression: Functions.collWithNullsAndTrue[0].toQuantity()
+      result: []
 
-  - desc: '** integer to Quantity'
-    expression: 1.toQuantity() = 1 '1'
-    result: [ true ]
+    - desc: '** integer to Quantity'
+      expression: 1.toQuantity() = 1 '1'
+      result: [ true ]
 
-  - desc: '** long integer to Quantity is not defined'
-    expression: 1L.toQuantity() = 1 '1'
-    result: []
+    - desc: '** long integer to Quantity is not defined'
+      expression: 1L.toQuantity() = 1 '1'
+      result: []
 
-  - desc: '** collection to Quantity'
-    expression: (5 | 6).toQuantity()
-    error: [true]
+    - desc: '** collection to Quantity'
+      expression: (5 | 6).toQuantity()
+      error: [true]
 
 
 subject:

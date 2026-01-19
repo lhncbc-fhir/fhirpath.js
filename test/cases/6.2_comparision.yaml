@@ -141,10 +141,12 @@ tests:
   - 'group: Quantities':
     - expression: 1 year > 1 'a'
       result: []
+    - expression: 1 'a' > 1 day
+      result: []
     - expression: 1 's' > 1 year
       result: []
     - expression: 1 'min' < 2 minutes
-      result: []
+      result: [true]
     - expression: 1 'kg' < 2 's'
       result: []
     - expression: 1 year > 12 months
@@ -189,6 +191,12 @@ tests:
       result: [true]
     - expression: 1 year.comparable(1 second)
       result: [true]
+    - expression: 1 'a'.comparable(1 's')
+      result: [true]
+    - expression: 1 'a'.comparable(1 seconds)
+      result: [false]
+    - expression: 1 year.comparable(1 's')
+      result: [false]
     - expression: 1 'kg'.comparable(1 's')
       result: [false]
     # Check comparable on Quantity from FHIR Resource, which contains the value

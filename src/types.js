@@ -20,6 +20,24 @@ const instantRE = new RegExp(
 //let fhirDateTimeRE =
 ///([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1])(T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]+)?(Z|(\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00)))?)?)?/;
 
+
+/**
+ * A lookup object for time units that are considered to be above the "week"
+ * threshold. Used to determine if a unit represents a duration greater than
+ * a week (e.g., years, months).
+ * The keys are unit strings and the values are always true.
+ * Includes quoted and unquoted UCUM units.
+ *
+ * @type {Object.<string, boolean>}
+ */
+const isAboveWeeks = [
+  'years', 'year', 'months', 'month', 'mo', 'a', '\'mo\'', '\'a\''
+].reduce((acc, unit) => {
+  acc[unit] = true;
+  return acc;
+}, {});
+
+
 /**
  *   Class FP_Type is the superclass for FHIRPath types that required special
  *   handling.
@@ -95,20 +113,75 @@ class FP_Quantity extends FP_Type {
     this.unit = unit;
   }
 
+
+  /**
+   * Determines if the current unit (or the provided unit) is a calendar duration.
+   * Calendar durations are units like years, months, weeks, days, etc.
+   *
+   * @param {string} [toUnit] - The unit to check. If not provided, uses this.unit.
+   * @returns {boolean} - True if the unit is a calendar duration, false otherwise.
+   */
+  isCalendarDuration(toUnit) {
+    return hasOwnProperty(FP_Quantity._calendarDuration2Seconds, toUnit || this.unit);
+  }
+
+
+  /**
+   * Checks if the current unit (or the provided unit) is above the "week" threshold,
+   * meaning it represents a duration greater than a week (e.g., months, years).
+   *
+   * @param {string} [toUnit] - The unit to check. If not provided, uses this.unit.
+   * @returns {boolean} - True if the unit is above the week threshold, false otherwise.
+   */
+  isUnitGreaterThanMaxComparable(toUnit) {
+    return isAboveWeeks[toUnit || this.unit] ?? false;
+  }
+
+
+  /**
+   * Determines if two duration units (the current and the provided one) are
+   * not comparable. Calendar durations and definite quantity durations above
+   * days (and weeks) are considered un-comparable.
+   * See: https://build.fhir.org/ig/HL7/FHIRPath/#quantity-equality
+   *
+   * @param {string} otherUnit - The unit to compare with this.unit.
+   * @returns {boolean} - True if the durations are not comparable, false otherwise.
+   */
+  isNotComparableDurations(otherUnit) {
+    return this.isCalendarDuration() !== this.isCalendarDuration(otherUnit) &&
+      (this.isUnitGreaterThanMaxComparable() || this.isUnitGreaterThanMaxComparable(otherUnit));
+  }
+
+
+  /**
+   * Compares this Quantity with another for equality.
+   * If the quantities could not be compared, returns null, which will be
+   * converted to an empty collection in the "doInvoke" function.
+   * See https://hl7.org/fhirpath/#equals
+   *
+   * @param {FP_Quantity} otherQuantity - The quantity to compare with
+   * @returns {boolean|null} - true if equal, false if not equal, null if not
+   *  comparable
+   *
+   * @example
+   * // Allowed comparisons (≤ week threshold)
+   * (1 week).equals(7 days)  // true
+   * (1 day).equals(24 hours) // true
+   * (1 week).equals(1 'wk')  // true
+   * (1 month).equals(30 days) // true
+   * (1 year).equals(12 months) // true
+   *
+   * @example
+   * // Disallowed comparisons (> week threshold)
+   * (1 month).equals(30 'd') // null (not comparable)
+   * (1 'a').equals(365 days) // null (not comparable)
+   */
   equals(otherQuantity) {
     if (!(otherQuantity instanceof this.constructor)) {
       return false;
     }
 
-    const thisUnitInSeconds = FP_Quantity._calendarDuration2Seconds[this.unit];
-    const otherUnitInSeconds = FP_Quantity._calendarDuration2Seconds[otherQuantity.unit];
-
-    if (
-      !thisUnitInSeconds !== !otherUnitInSeconds &&
-      (thisUnitInSeconds > 1 || otherUnitInSeconds > 1)
-    ) {
-      // If one of the operands is a calendar duration greater than seconds and
-      // another one is not a calendar duration, return empty result
+    if (this.isNotComparableDurations(otherQuantity.unit)) {
       return null;
     }
 
@@ -175,17 +248,33 @@ class FP_Quantity extends FP_Type {
   }
 
   /**
-   *  Returns a number less than 0, equal to 0 or greater than 0
-   *  if this quantity is less than, equal to, or greater than otherQuantity.
-   *  If the quantities could not be compared, returns null, which will be
-   *  converted to an empty collection in the "doInvoke" function
-   *  See https://hl7.org/fhirpath/#comparison
-   *  @param {FP_Quantity} otherQuantity
-   *  @return {number|null}
+   * Compares this Quantity with another to determine ordering.
+   * Returns negative if this < other, positive if this > other, 0 if equal.
+   * If the quantities could not be compared, returns null, which will be
+   * converted to an empty collection in the "doInvoke" function.
+   * See https://hl7.org/fhirpath/#comparison
+   *
+   * @param {FP_Quantity} otherQuantity
+   * @return {number|null}
+   *
+   *  @example
+   * // Allowed comparisons (≤ week threshold)
+   * (2 weeks).compare(13 days) // > 0
+   * (1 day).compare(25 hours) // < 0
+   * (1 week).compare(1 'wk') // = 0
+   *
+   * @example
+   * // Disallowed comparisons (> week threshold)
+   * (1 month).compare(30 'd') // null (not comparable)
+   * (1 'a').compare(1 day) // null (not comparable)
    */
   compare(otherQuantity) {
     if (this.unit === otherQuantity.unit) {
       return this.value - otherQuantity.value;
+    }
+
+    if (this.isNotComparableDurations(otherQuantity.unit)) {
+      return null;
     }
 
     const thisUnitInSeconds = FP_Quantity._calendarDuration2Seconds[this.unit];
@@ -204,12 +293,6 @@ class FP_Quantity extends FP_Type {
 
       // Otherwise, we convert them to seconds to compare.
       return this.value * thisUnitInSeconds - otherQuantity.value * otherUnitInSeconds;
-    } else if(thisUnitInSeconds > 1 || otherUnitInSeconds > 1) {
-      // If one of the operands is a calendar duration greater than seconds and
-      // another one is not a calendar duration, then they are not comparable.
-      // For example, 1 year > 1 'a' should return [].
-      // See https://hl7.org/fhirpath/#comparison.
-      return null;
     }
 
     const ucumUnitCode = FP_Quantity.getEquivalentUcumUnitCode(this.unit),
@@ -225,14 +308,24 @@ class FP_Quantity extends FP_Type {
 
 
   /**
-   *  Returns true if this quantity can be compared with otherQuantity, false
-   *  otherwise.
-   *  @param {FP_Quantity} otherQuantity
-   *  @return {boolean}
+   * Determines if this Quantity is comparable with another.
+   * See https://hl7.org/fhir/fhirpath.html#fn-comparable
+   *
+   * @param {FP_Quantity} otherQuantity - The quantity to check comparability with
+   * @returns {boolean} - true if comparable, false otherwise
+   *
+   * @example
+   * (1 year).comparable(1 month) // true (both calendar durations)
+   * (1 year).comparable(365 'd') // false (year is > week, 'd' is UCUM)
+   * (1 day).comparable(24 'h') // true (both ≤ week threshold)
    */
   comparable(otherQuantity) {
     if (this.unit === otherQuantity.unit) {
       return true;
+    }
+
+    if (this.isNotComparableDurations(otherQuantity.unit)) {
+      return false;
     }
 
     const thisUnitInSeconds = FP_Quantity._calendarDuration2Seconds[this.unit];
@@ -241,12 +334,6 @@ class FP_Quantity extends FP_Type {
     if(thisUnitInSeconds !== undefined && otherUnitInSeconds !== undefined) {
       // If both operands are calendar durations, they are comparable
       return true;
-    } else if(thisUnitInSeconds > 1 || otherUnitInSeconds > 1) {
-      // If one of the operands is a calendar duration greater than seconds and
-      // another one is not a calendar duration, then they are not comparable.
-      // For example, 1 year.comparable(1 'a') should return false.
-      // See https://hl7.org/fhirpath/#comparison.
-      return false;
     }
 
     const ucumUnitCode = FP_Quantity.getEquivalentUcumUnitCode(this.unit),
@@ -270,21 +357,15 @@ class FP_Quantity extends FP_Type {
       return new FP_Quantity(this.value + otherQuantity.value * otherConvFactor / thisConvFactor, this.unit);
     }
 
-    const thisUnitInSeconds = FP_Quantity._calendarDuration2Seconds[this.unit];
-    const otherUnitInSeconds = FP_Quantity._calendarDuration2Seconds[otherQuantity.unit];
-
-    if (
-      !thisUnitInSeconds !== !otherUnitInSeconds &&
-      (thisUnitInSeconds > 1 || otherUnitInSeconds > 1)
-    ) {
-      // If one of the operands is a calendar duration greater than seconds and
-      // another one is not a calendar duration, return empty result
+    if (this.isNotComparableDurations(otherQuantity.unit)) {
       return null;
     }
 
+    const thisUnitInSeconds = FP_Quantity._calendarDuration2Seconds[this.unit];
     const thisUcumUnitCode = thisUnitInSeconds ? 's' : this.unit.replace(surroundingApostrophesRegex, '');
     const thisValue = (thisUnitInSeconds || 1) * this.value;
 
+    const otherUnitInSeconds = FP_Quantity._calendarDuration2Seconds[otherQuantity.unit];
     const otherUcumUnitCode = otherUnitInSeconds ? 's' : otherQuantity.unit.replace(surroundingApostrophesRegex, '');
     const otherValue = (otherUnitInSeconds || 1) * otherQuantity.value;
 
@@ -305,17 +386,17 @@ class FP_Quantity extends FP_Type {
    * @return {FP_Quantity}
    */
   mul(otherQuantity) {
-    const thisUnitInSeconds = FP_Quantity._calendarDuration2Seconds[this.unit];
-    const otherUnitInSeconds = FP_Quantity._calendarDuration2Seconds[otherQuantity.unit];
-
     if (
-      (thisUnitInSeconds > 1 && otherQuantity.unit !== "'1'") ||
-      (otherUnitInSeconds > 1 && this.unit !== "'1'")
+      this.isNotComparableDurations(otherQuantity.unit) && this.unit !== "'1'" && otherQuantity.unit !== "'1'" ||
+      this.isCalendarDuration() && this.isCalendarDuration(otherQuantity.unit) && (
+        this.isUnitGreaterThanMaxComparable() || this.isUnitGreaterThanMaxComparable(otherQuantity.unit)
+      )
     ) {
-      // If one of the operands is a calendar duration greater than seconds and
-      // another one is not a number, return empty result
       return null;
     }
+
+    const thisUnitInSeconds = FP_Quantity._calendarDuration2Seconds[this.unit];
+    const otherUnitInSeconds = FP_Quantity._calendarDuration2Seconds[otherQuantity.unit];
 
     const thisQ = this.convToUcumUnits(this, thisUnitInSeconds);
     if (!thisQ) {
@@ -353,6 +434,10 @@ class FP_Quantity extends FP_Type {
       return null;
     }
 
+    if (this.isNotComparableDurations(otherQuantity.unit) && otherQuantity.unit !== "'1'") {
+      return null;
+    }
+
     const thisUnitInSeconds = FP_Quantity._calendarDuration2Seconds[this.unit];
     const otherUnitInSeconds = FP_Quantity._calendarDuration2Seconds[otherQuantity.unit];
 
@@ -368,15 +453,7 @@ class FP_Quantity extends FP_Type {
       } else if (otherQuantity.unit === "'1'") {
         // If the second operand is a number
         return new FP_Quantity(this.value / otherQuantity.value, this.unit);
-      } else if (thisUnitInSeconds > 1) {
-        // If the first operand is a calendar duration greater than seconds
-        // and the other is not a calendar duration or number, return an empty result.
-        return null;
       }
-    } else if (otherUnitInSeconds > 1) {
-      // If the first operands is not a calendar duration and the other is a
-      // calendar duration greater than seconds, return an empty result.
-      return null;
     }
 
     const thisQ = this.convToUcumUnits(this, thisUnitInSeconds);
@@ -589,6 +666,10 @@ FP_Quantity.dateTimeArithmeticDurationUnits = {
   'minute': "minute",
   'second': "second",
   'millisecond': "millisecond",
+  "'wk'": "week",
+  "'d'": "day",
+  "'h'": "hour",
+  "'min'": "minute",
   "'s'": "second",
   "'ms'": "millisecond"
 };
@@ -645,11 +726,18 @@ class FP_TimeBase extends FP_Type {
     let qVal = timeQuantity.value;
     const isTime = (cls === FP_Time);
 
-    // From the FHIRPath specification: "For precisions above seconds, the
-    // decimal portion of the time-valued quantity is ignored, since date/time
-    // arithmetic above seconds is performed with calendar duration semantics."
     if (isTime ? unitPrecision < 2 : unitPrecision < 5) {
-      qVal = Math.trunc(qVal);
+      // From the FHIRPath specification: "For precisions above seconds, the
+      // decimal portion of the time-valued quantity is ignored, since date/time
+      // arithmetic above seconds is performed with calendar duration semantics."
+      const truncatedVal = Math.trunc(qVal);
+      if (truncatedVal !== qVal) {
+        console.warn( 'The quantity value was truncated from ' +
+          timeQuantity.toString() + ' to ' +
+          truncatedVal + ' ' + timeQuantity.unit +
+          ' in operation with ' + this.toString());
+      }
+      qVal = truncatedVal;
     }
 
     // If the precision of the time quantity is higher than the precision of the
@@ -1890,6 +1978,24 @@ function toJSON(obj, space = undefined) {
 }
 
 
+/**
+ * Reference to the native Object.prototype.hasOwnProperty method, bound to
+ * Function.prototype.call. This can be used to safely check if an object has
+ * a property as its own (not inherited), avoiding issues if the object has
+ * a custom hasOwnProperty property.
+ *
+ * Example usage:
+ * // Cannot use util.hasOwnProperty directly because it triggers the error:
+ * // "Do not access Object.prototype method 'hasOwnProperty' from target object"
+ * const { hasOwnProperty } = require("./utilities");
+ * ...
+ * hasOwnProperty(obj, 'propertyName')
+ *
+ * @type {Function}
+ */
+const hasOwnProperty = Function.prototype.call.bind(Object.prototype.hasOwnProperty);
+
+
 module.exports = {
   FP_Type,
   FP_TimeBase,
@@ -1907,5 +2013,6 @@ module.exports = {
   typeFn,
   isFn,
   asFn,
-  toJSON
+  toJSON,
+  hasOwnProperty
 };

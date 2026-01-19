@@ -3,6 +3,15 @@
 This log documents significant changes for each release.  This project follows
 [Semantic Versioning](http://semver.org/).
 
+## [4.8.4] - 2026-01-13
+### Changes
+- Applied changes in the specification regarding Quantity comparisons.
+  The new wording is "Calendar durations and definite quantity durations above
+  days (and weeks) are considered un-comparable".
+### Fixed
+- An issue where the `unit` parameter of `toQuantity([unit : String]) : Quantity`
+  was processed incorrectly.
+
 ## [4.8.3] - 2026-01-13
 ### Fixed
 - Updated dependencies to address vulnerabilities.

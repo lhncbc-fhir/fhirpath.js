@@ -1296,14 +1296,12 @@ tests:
         result:
           - true
         model: r5
-        disable: true
       - desc: '** testStringQuantityWeekLiteralToQuantity'
         inputfile: patient-example.json
         expression: '''1 \''wk\''''.toQuantity() = 1 week'
         result:
           - true
         model: r5
-        disable: true
       - desc: '** testStringQuantityMonthLiteralToQuantity'
         inputfile: patient-example.json
         expression: '''1 \''mo\''''.toQuantity() = 1 month'
@@ -1622,7 +1620,6 @@ tests:
         result:
           - true
         model: r5
-        disable: true
       - desc: '** testQuantity7'
         inputfile: patient-example.json
         expression: 6 days < 1 week
@@ -4861,7 +4858,6 @@ tests:
         result:
           - '1973-12-26'
         model: r5
-        disable: true
       - desc: '** testPlusDate14'
         inputfile: patient-example.json
         expression: '@1973-12-25 + 1 ''mo'''
@@ -4873,7 +4869,6 @@ tests:
         result:
           - '1974-01-01'
         model: r5
-        disable: true
       - desc: '** testPlusDate16'
         inputfile: patient-example.json
         expression: '@1973-12-25 + 1 ''a'''
@@ -4908,14 +4903,12 @@ tests:
         result:
           - '1973-12-25T00:01:00.000+10:00'
         model: r5
-        disable: true
       - desc: '** testPlusDate22'
         inputfile: patient-example.json
         expression: '@1973-12-25T00:00:00.000+10:00 + 1 ''h'''
         result:
           - '1973-12-25T01:00:00.000+10:00'
         model: r5
-        disable: true
       - desc: '** testPlus6'
         inputfile: patient-example.json
         expression: '@1974-12-25 + 7'
@@ -6283,7 +6276,6 @@ tests:
           - false
           - true
         model: r5
-        disable: true
       - desc: '** testPrimitiveExtensionsElement'
         inputfile: patient-name-extensions.json
         expression: Patient.name.given.select($this.hasValue())
@@ -6291,7 +6283,6 @@ tests:
           - false
           - true
         model: r5
-        disable: true
   - 'group: cdaTests':
       - desc: '** testHasTemplateId1'
         inputfile: ccda.json

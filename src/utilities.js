@@ -1,7 +1,7 @@
 // This file holds utility functions used in implementing the public functions.
 
 const util =  {};
-const { ResourceNode, toJSON } = require('./types');
+const { ResourceNode, toJSON, hasOwnProperty } = require('./types');
 
 
 /**
@@ -386,7 +386,7 @@ util.checkAllowAsync = function(ctx, fnName) {
  *
  * @type {Function}
  */
-util.hasOwnProperty = Function.prototype.call.bind(Object.prototype.hasOwnProperty);
+util.hasOwnProperty = hasOwnProperty;
 
 
 module.exports = util;
