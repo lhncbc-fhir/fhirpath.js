@@ -11,6 +11,9 @@ This log documents significant changes for each release.  This project follows
 ### Fixed
 - An issue where the `unit` parameter of `toQuantity([unit : String]) : Quantity`
   was processed incorrectly.
+- An issue that prevented the use of calculated calendar duration in date-time
+  arithmetic. For example, the expressions `@2020-01-01 + (1 day + 1 day)` and
+  `1 day + 1 day + 1 day` now work as expected.
 
 ## [4.8.3] - 2026-01-13
 ### Fixed

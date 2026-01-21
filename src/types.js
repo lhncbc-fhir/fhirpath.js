@@ -345,16 +345,50 @@ class FP_Quantity extends FP_Type {
 
 
   /**
-   *  Adds a quantity to this quantity.
-   * @param {FP_Quantity} otherQuantity a quantity to be added to this quantity.
-   * @return {FP_Quantity|null}
+   * Adds a quantity to this quantity.
+   *
+   * This method handles addition of quantities with different units by:
+   * 1. Converting year/month units using a conversion factor (1 year = 12 months)
+   * 2. Converting calendar duration units using their second equivalents
+   * 3. Converting other UCUM units using the UCUM utility library
+   *
+   * The result is returned in the unit of the smaller magnitude to preserve
+   * precision, especially in following date-time arithmetic. For example:
+   *
+   *    `1 year + 6 months = 18 months`
+   *
+   *    `1 'h' + 30 'min' = 90 'min'`
+   *
+   * This is needed because date-time arithmetic ignores the decimal portion of
+   * the time-valued quantity for precisions above seconds (see
+   * https://hl7.org/fhirpath/#addition-2):
+   *
+   *   `@2011-01-10 + 18 months = 2012-07-10`
+   *
+   *   `@2011-01-10 + 1.5 years = @2011-01-10 + 1 years = 2012-01-10`
+   *
+   * @param {FP_Quantity} otherQuantity - A quantity to be added to this
+   *  quantity.
+   *
+   * @returns {FP_Quantity|null} A new FP_Quantity object representing the sum
+   *  of the two quantities, or null if:
+   *   - The quantities have incomparable duration units
+   *   - Unit conversion fails
+   *   - Either unit involves special UCUM units that cannot be converted
    */
   plus(otherQuantity) {
     const thisConvFactor = FP_Quantity._yearMonthConversionFactor[this.unit];
     const otherConvFactor = FP_Quantity._yearMonthConversionFactor[otherQuantity.unit];
     if (thisConvFactor && otherConvFactor) {
       // If the values are indicated in years and months, we use the conversion factor: 1 year = 12 months
-      return new FP_Quantity(this.value + otherQuantity.value * otherConvFactor / thisConvFactor, this.unit);
+      if (thisConvFactor > otherConvFactor) {
+        return new FP_Quantity(
+          this.value * thisConvFactor / otherConvFactor + otherQuantity.value,
+          otherQuantity.unit);
+      }
+      return new FP_Quantity(
+        this.value + otherQuantity.value * otherConvFactor / thisConvFactor,
+        this.unit);
     }
 
     if (this.isNotComparableDurations(otherQuantity.unit)) {
@@ -362,14 +396,28 @@ class FP_Quantity extends FP_Type {
     }
 
     const thisUnitInSeconds = FP_Quantity._calendarDuration2Seconds[this.unit];
-    const thisUcumUnitCode = thisUnitInSeconds ? 's' : this.unit.replace(surroundingApostrophesRegex, '');
-    const thisValue = (thisUnitInSeconds || 1) * this.value;
-
     const otherUnitInSeconds = FP_Quantity._calendarDuration2Seconds[otherQuantity.unit];
-    const otherUcumUnitCode = otherUnitInSeconds ? 's' : otherQuantity.unit.replace(surroundingApostrophesRegex, '');
-    const otherValue = (otherUnitInSeconds || 1) * otherQuantity.value;
+    if (thisUnitInSeconds && otherUnitInSeconds) {
+      if (thisUnitInSeconds > otherUnitInSeconds) {
+        return new FP_Quantity(
+          this.value * thisUnitInSeconds / otherUnitInSeconds + otherQuantity.value,
+          otherQuantity.unit);
+      } else {
+        return new FP_Quantity(
+          this.value + otherQuantity.value * otherUnitInSeconds / thisUnitInSeconds,
+          this.unit);
+      }
+    }
 
-    const convResult = ucumUtils.convertUnitTo(otherUcumUnitCode, otherValue, thisUcumUnitCode);
+    const thisUcumUnitCode = thisUnitInSeconds ?
+      FP_Quantity.mapTimeUnitsToUCUMCode[this.unit] :
+      this.unit.replace(surroundingApostrophesRegex, '');
+
+    const otherUcumUnitCode = otherUnitInSeconds ?
+      FP_Quantity.mapTimeUnitsToUCUMCode[otherQuantity.unit] :
+      otherQuantity.unit.replace(surroundingApostrophesRegex, '');
+
+    const convResult = ucumUtils.convertUnitTo(otherUcumUnitCode, otherQuantity.value, thisUcumUnitCode);
 
     if (convResult.status !== 'succeeded'
       || convResult.fromUnit.isSpecial_
@@ -377,7 +425,11 @@ class FP_Quantity extends FP_Type {
       return null;
     }
 
-    return new FP_Quantity(thisValue + convResult.toVal, thisUcumUnitCode);
+    if (convResult.fromUnit.magnitude_ < convResult.toUnit.magnitude_) {
+      return new FP_Quantity((this.value + convResult.toVal)*convResult.toUnit.magnitude_/convResult.fromUnit.magnitude_, otherUnitInSeconds ? otherQuantity.unit : "'" + otherUcumUnitCode + "'");
+    }
+
+    return new FP_Quantity(this.value + convResult.toVal, thisUnitInSeconds ? this.unit : "'" + thisUcumUnitCode + "'");
   }
 
   /**
