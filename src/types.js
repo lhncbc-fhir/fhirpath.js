@@ -139,15 +139,28 @@ class FP_Quantity extends FP_Type {
 
 
   /**
-   * Determines if two duration units (the current and the provided one) are
-   * not comparable. Calendar durations and definite quantity durations above
-   * days (and weeks) are considered un-comparable.
+   * Determines if two units are incomparable due to mixing calendar durations
+   * with non-calendar units when at least one unit is above the "week" threshold.
+   *
+   * Returns true when:
+   * - One unit is a calendar duration and the other is not (UCUM or other)
+   * - AND at least one of them represents a duration greater than a week
+   *
+   * Examples that return true:
+   * - "1 day" (calendar) vs "1 'mo'" (UCUM month code) --> UCUM unit > week
+   * - "1 month" (calendar) vs "1 'd'" (UCUM day) --> calendar unit > week
+   * - "1 year" (calendar) vs "1 'kg'" (non-duration) --> calendar unit > week
+   *
+   * Calendar durations and UCUM durations use different semantics above the week
+   * threshold and cannot be reliably compared. Calendar durations above weeks
+   * (months, years) have variable actual lengths.
+   *
    * See: https://build.fhir.org/ig/HL7/FHIRPath/#quantity-equality
    *
    * @param {string} otherUnit - The unit to compare with this.unit.
-   * @returns {boolean} - True if the durations are not comparable, false otherwise.
+   * @returns {boolean} - True if the units are incomparable, false otherwise.
    */
-  isNotComparableDurations(otherUnit) {
+  hasIncomparableDurationMix(otherUnit) {
     return this.isCalendarDuration() !== this.isCalendarDuration(otherUnit) &&
       (this.isUnitGreaterThanMaxComparable() || this.isUnitGreaterThanMaxComparable(otherUnit));
   }
@@ -181,7 +194,7 @@ class FP_Quantity extends FP_Type {
       return false;
     }
 
-    if (this.isNotComparableDurations(otherQuantity.unit)) {
+    if (this.hasIncomparableDurationMix(otherQuantity.unit)) {
       return null;
     }
 
@@ -273,7 +286,7 @@ class FP_Quantity extends FP_Type {
       return this.value - otherQuantity.value;
     }
 
-    if (this.isNotComparableDurations(otherQuantity.unit)) {
+    if (this.hasIncomparableDurationMix(otherQuantity.unit)) {
       return null;
     }
 
@@ -324,7 +337,7 @@ class FP_Quantity extends FP_Type {
       return true;
     }
 
-    if (this.isNotComparableDurations(otherQuantity.unit)) {
+    if (this.hasIncomparableDurationMix(otherQuantity.unit)) {
       return false;
     }
 
@@ -391,7 +404,7 @@ class FP_Quantity extends FP_Type {
         this.unit);
     }
 
-    if (this.isNotComparableDurations(otherQuantity.unit)) {
+    if (this.hasIncomparableDurationMix(otherQuantity.unit)) {
       return null;
     }
 
@@ -439,9 +452,17 @@ class FP_Quantity extends FP_Type {
    */
   mul(otherQuantity) {
     if (
-      this.isNotComparableDurations(otherQuantity.unit) && this.unit !== "'1'" && otherQuantity.unit !== "'1'" ||
-      this.isCalendarDuration() && this.isCalendarDuration(otherQuantity.unit) && (
-        this.isUnitGreaterThanMaxComparable() || this.isUnitGreaterThanMaxComparable(otherQuantity.unit)
+      (
+        this.hasIncomparableDurationMix(otherQuantity.unit) &&
+        this.unit !== "'1'" &&
+        otherQuantity.unit !== "'1'"
+      ) || (
+        this.isCalendarDuration() &&
+        this.isCalendarDuration(otherQuantity.unit) &&
+        (
+          this.isUnitGreaterThanMaxComparable() ||
+          this.isUnitGreaterThanMaxComparable(otherQuantity.unit)
+        )
       )
     ) {
       return null;
@@ -486,7 +507,7 @@ class FP_Quantity extends FP_Type {
       return null;
     }
 
-    if (this.isNotComparableDurations(otherQuantity.unit) && otherQuantity.unit !== "'1'") {
+    if (this.hasIncomparableDurationMix(otherQuantity.unit) && otherQuantity.unit !== "'1'") {
       return null;
     }
 

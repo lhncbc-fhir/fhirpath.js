@@ -179,7 +179,7 @@ const quantityRegex = /^((\+|-)?\d+(\.\d+)?)\s*(('[^']+')|([a-zA-Z]+))?$/,
  *
  * @param {Array} coll - A collection that should contain a single element to
  *  convert. If the collection contains multiple items, an error will be thrown.
- *  If the collection is empty, the result will be an empty collection (undefined).
+ *  If the collection is empty, the result will be an empty collection (null).
  * @param {string} [toUnit] - Optional target unit for conversion. FHIRPath
  *  calendar duration units (e.g., 'seconds', 'years', 'months') are also
  *  supported.
@@ -238,7 +238,7 @@ engine.toQuantity = function (coll, toUnit) {
     }
 
     if (result && toUnit && result.unit !== toUnit) {
-      if ( result.isNotComparableDurations(toUnit) ) {
+      if ( result.hasIncomparableDurationMix(toUnit) ) {
         // If the durations cannot be compared, the conversion is not possible.
         return null;
       }
