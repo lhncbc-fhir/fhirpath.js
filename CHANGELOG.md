@@ -3,6 +3,10 @@
 This log documents significant changes for each release.  This project follows
 [Semantic Versioning](http://semver.org/).
 
+## [4.8.3] - 2026-01-13
+### Fixed
+- Updated dependencies to address vulnerabilities.
+
 ## [4.8.2] - 2025-11-24
 ### Fixed
 - the ~(equivalence) operator for quantities (now the comparison is performed
