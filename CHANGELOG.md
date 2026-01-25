@@ -3,7 +3,7 @@
 This log documents significant changes for each release.  This project follows
 [Semantic Versioning](http://semver.org/).
 
-## [4.8.4] - 2026-01-13
+## [4.8.3] - 2026-01-13
 ### Changes
 - Applied changes in the specification regarding Quantity comparisons.
   The new wording is "Calendar durations and definite quantity durations above
@@ -14,10 +14,6 @@ This log documents significant changes for each release.  This project follows
 - An issue that prevented the use of calculated calendar duration in date-time
   arithmetic. For example, the expressions `@2020-01-01 + (1 day + 1 day)` and
   `1 day + 1 day + 1 day` now work as expected.
-
-## [4.8.3] - 2026-01-13
-### Fixed
-- Updated dependencies to address vulnerabilities.
 
 ## [4.8.2] - 2025-11-24
 ### Fixed
