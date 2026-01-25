@@ -123,13 +123,14 @@ const generateTest = (test, testResource) => {
 
   expressions.forEach(expression => {
     const expressionText = expression instanceof Object ? util.toJSON(expression) : expression;
+    const testName = ((test.desc ? test.desc + ': ' : '') + (expressionText|| ''))
     switch(test.type) {
     case 'skipped':
-      return it.skip(`Disabled test ${test.desc}`, () => {});
+      return it.skip(`Disabled test ${testName}`, () => {});
     case 'focused':
-      return it.only(((test.desc || '') + ': ' + (expressionText|| '')), (done) => getTestData(expression, done));
+      return it.only(testName, (done) => getTestData(expression, done));
     default:
-      return it(((test.desc || '') + ': ' + (expressionText || '')), (done) => getTestData(expression, done));
+      return it(testName, (done) => getTestData(expression, done));
     }
   });
 };

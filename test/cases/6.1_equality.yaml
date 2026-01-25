@@ -137,23 +137,26 @@ tests:
       - expression: 1 month = 30 'd'
         result: []
 
+      - expression: 1 'mo' = 30 days
+        result: []
+
       - expression: 1 month = 30 days
         result: [true]
 
       - expression: 1 week = 1 'wk'
-        result: []
+        result: [true]
 
       - expression: 1 week = 7 days
         result: [true]
 
       - expression: 1 day = 1 'd'
-        result: []
+        result: [true]
 
       - expression: 1 day = 24 hours
         result: [true]
 
       - expression: 1 day = 24 'h'
-        result: []
+        result: [true]
 
       - expression: 1 second = 1 's'
         result: [true]

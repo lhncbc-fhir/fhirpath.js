@@ -20,6 +20,7 @@ const sources = [
   ['input-r4/patient-example.xml', 'resources/r4/patient-example.json', 'https://raw.githubusercontent.com/FHIR/fhir-test-cases/refs/heads/master/r4/patient-example.xml'],
   ['input-r4/questionnaire-example.xml', 'resources/r4/questionnaire-example.json', 'https://raw.githubusercontent.com/FHIR/fhir-test-cases/refs/heads/master/r4/questionnaire-example.xml'],
   ['input-r4/valueset-example-expansion.xml', 'resources/r4/valueset-example-expansion.json', 'https://raw.githubusercontent.com/FHIR/fhir-test-cases/refs/heads/master/r4/valueset-example-expansion.xml'],
+  ['input-r4/patient-name-extensions.json', 'resources/r4/patient-name-extensions.json', 'https://raw.githubusercontent.com/FHIR/fhir-test-cases/refs/heads/master/r4/patient-name-extensions.json'],
 
   // FHIR R5 test cases
   ['fhir-r5.xml', 'cases/fhir-r5.yaml', 'https://raw.githubusercontent.com/FHIR/fhir-test-cases/refs/heads/master/r5/fhirpath/tests-fhir-r5.xml', 'r5'],
@@ -36,6 +37,7 @@ const sources = [
   ['input-r5/patient-example-name.xml', 'resources/r5/patient-example-name.json', 'https://raw.githubusercontent.com/FHIR/fhir-test-cases/refs/heads/master/r5/patient-example-name.xml'],
   ['input-r5/patient-container-example.json', 'resources/r5/patient-container-example.json', 'https://raw.githubusercontent.com/FHIR/fhir-test-cases/refs/heads/master/r5/patient-container-example.json'],
   ['input-r5/diagnosticreport-eric.json', 'resources/r5/diagnosticreport-eric.json', 'https://raw.githubusercontent.com/FHIR/fhir-test-cases/refs/heads/master/r5/diagnosticreport-eric.json'],
+  ['input-r5/patient-name-extensions.json', 'resources/r5/patient-name-extensions.json', 'https://raw.githubusercontent.com/FHIR/fhir-test-cases/refs/heads/master/r5/patient-name-extensions.json'],
   // Can't convert this one:
   // ['input-r5/ccda.xml', 'resources/r5/ccda.json', 'https://raw.githubusercontent.com/FHIR/fhir-test-cases/refs/heads/master/r5/ccda.xml'],
 ].map((item) => {
