@@ -2,6 +2,7 @@ const fhirpath = require('../src/fhirpath');
 const r4_model = require('../fhir-context/r4');
 const _ = require('lodash');
 const {FP_DateTime, FP_Quantity} = require('../src/types');
+const observationResource = require('./resources/r4/observation-example.json');
 const input = {
   get questionnairePartExample() {
     // Clone input file contents to avoid one test affecting another
@@ -221,6 +222,19 @@ describe('types', () => {
     ).toStrictEqual([
       'FHIR.Quantity', 'FHIR.Quantity', 'FHIR.Quantity', 'FHIR.Quantity', 'System.Date'
     ]);
+  });
+
+  it('should allow root type name in expression prefix', () => {
+    let partOfResource = fhirpath.evaluate(
+      observationResource,
+      "Observation.code.coding",
+      {},
+      r4_model
+    );
+
+    expect(fhirpath.evaluate(partOfResource, "code", {}, r4_model)).toStrictEqual(["29463-7", "3141-9", "27113001", "body-weight"]);
+    expect(fhirpath.evaluate(partOfResource, "Coding.code", {}, r4_model)).toStrictEqual(["29463-7", "3141-9", "27113001", "body-weight"]);
+    expect(fhirpath.evaluate(partOfResource, "select(Coding.code)", {}, r4_model)).toStrictEqual(["29463-7", "3141-9", "27113001", "body-weight"]);
   });
 });
 

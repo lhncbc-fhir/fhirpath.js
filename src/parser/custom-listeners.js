@@ -59,14 +59,34 @@ class PathListener extends Listener {
   }
 
   /**
-   * Creates and enters a new AST node.
-   * @param {*} ctx - ANTLR context.
-   * @param {string} nodeType - Type of node.
+   * Creates and enters a new AST node and adds it to the parent's children.
+   * Marks MemberInvocation nodes that appear at the root level of
+   * an InvocationTerm to enable proper type-based filtering during evaluation.
+   *
+   * @param {Object} ctx - ANTLR context.
+   * @param {string} nodeType - The type of node being entered (e.g.,
+   *  'MemberInvocation', 'InvocationTerm').
    * @returns {Object} The new AST node.
+   *
+   * @example
+   * // When parsing "Observation.code", the MemberInvocation for "Observation"
+   * // will be marked with atRoot: 1
+   * // When parsing "select(Coding.code)", the MemberInvocation for "Coding"
+   * // will be marked with atRoot: 2
    */
   enterNode(ctx, nodeType) {
     let parentNode = this.parentStack[this.parentStack.length - 1];
     let node = { type: nodeType };
+    // Mark MemberInvocation nodes at the root level of an InvocationTerm.
+    // This enables type-based filtering when the invocation starts with a type name
+    // (e.g., "Observation.code" or "Coding.code").
+    if (parentNode?.type === 'InvocationTerm' && nodeType === 'MemberInvocation') {
+      // atRoot = 1: MemberInvocation is outside any function ParamList
+      //             (e.g., "Observation.code" at the top level)
+      // atRoot = 2: MemberInvocation is inside a function ParamList
+      //             (e.g., "select(Coding.code)")
+      node.atRoot = this.parentStack.find(item => item.type === 'ParamList') ? 2 : 1;
+    }
     if (!parentNode.children)
       parentNode.children = [];
     parentNode.children.push(node);

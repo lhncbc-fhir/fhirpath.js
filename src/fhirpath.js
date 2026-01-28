@@ -204,16 +204,16 @@ engine.InvocationExpression = function(ctx, parentData, node) {
   }, parentData);
 };
 
+/**
+ * Evaluates a TermExpression node in the FHIRPath AST.
+ *
+ * @param {Object} ctx - The evaluation context containing model information and
+ *  variables.
+ * @param {Array} parentData - The array of data items to evaluate against.
+ * @param {Object} node - The AST node representing the TermExpression.
+ * @returns {Array} - The evaluation result from the child node.
+ */
 engine.TermExpression = function(ctx, parentData, node) {
-  if (parentData) {
-    parentData = parentData.map((x) => {
-      if (x instanceof Object && x.resourceType) {
-        return makeResNode(x, null, null, null, null, ctx.model);
-      }
-      return x;
-    });
-  }
-
   return engine.doEval(ctx,parentData, node.children[0]);
 };
 
@@ -452,25 +452,102 @@ engine.InvocationTerm = function(ctx, parentData, node) {
   return engine.doEval(ctx,parentData, node.children[0]);
 };
 
+/**
+ * Evaluates a MemberInvocation node in the FHIRPath AST.
+ *
+ * For each item in parentData, creates a ResourceNode and either:
+ *   - Pushes the ResourceNode itself if it matches the type specified
+ *     by astNode.atRoot,
+ *   - Or pushes its child ResourceNodes for the given key.
+ * Handles root-level type checks and child member resolution.
+ *
+ * @param {Object} ctx - The evaluation context.
+ * @param {Array} parentData - The array of parent data items.
+ * @param {Object} astNode - The AST node representing the MemberInvocation.
+ * @returns {Array} - An array of resolved ResourceNodes or child nodes.
+ */
+/**
+ * Evaluates a MemberInvocation node in the FHIRPath AST.
+ *
+ * This function handles member access in FHIRPath expressions (e.g., "code", "Observation.code").
+ * It supports both regular member access and root-level type filtering, where expressions
+ * can start with a FHIR type name to filter items by type.
+ *
+ * The function processes each item in parentData and:
+ * 1. Wraps it in a ResourceNode for consistent handling
+ * 2. Checks if it matches a root-level type specification (if astNode.atRoot is set)
+ * 3. Falls back to retrieving child nodes for the specified key
+ *
+ * @param {Object} ctx - The evaluation context containing:
+ *   @param {Object} ctx.model - The FHIR model for type resolution
+ *   @param {*} ctx.$this - The current context item (for root-level checking)
+ *   @param {*} ctx.dataRoot - The root data context (for root-level checking)
+ *   @param {number} [ctx.$index] - Optional index for array iteration
+ * @param {Array} parentData - Array of parent data items to process.
+ *   - a plain JavaScript object (optionally with __path__ metadata)
+ *   - a ResourceNode
+ * @param {Object} astNode - The AST node representing the MemberInvocation
+ *   @param {Array} astNode.children - Child nodes, first child contains the key
+ *   @param {number} [astNode.atRoot] - Indicates root-level invocation:
+ *     - undefined: Regular member access
+ *     - 1: Root-level outside function parameters
+ *     - 2: Root-level inside function parameters
+ *
+ * @returns {Array<ResourceNode>} Array of resolved ResourceNodes, which may be:
+ *   - The parent ResourceNode itself (if type matches at root level)
+ *   - Child ResourceNodes for the specified key
+ *   - Empty array if no matches found
+ */
+engine.MemberInvocation = function(ctx, parentData, astNode ) {
+  // Early return to avoid unnecessary variable declarations
+  if (!parentData) return [];
 
-engine.MemberInvocation = function(ctx, parentData, node ) {
-  const key = engine.doEval(ctx, parentData, node.children[0])[0];
+  // Extract the member key (property name) from the first child AST node
+  const key = engine.doEval(ctx, parentData, astNode.children[0])[0];
   const model = ctx.model;
+  const astNodeAtRoot = astNode.atRoot;
 
-  if (parentData) {
-    return parentData.reduce(function(acc, res) {
-      res = makeResNode(res, null, res.__path__?.path, null,
-        res.__path__?.fhirNodeDataType, model);
-      if (res.data?.resourceType === key) {
-        acc.push(res);
-      } else {
-        util.pushFn(acc, util.makeChildResNodes(res, key, model));
-      }
-      return acc;
-    }, []);
-  } else {
-    return [];
+  // Prepare TypeInfo for root-level type checking if this is a root invocation
+  const possibleTypeInfo = astNodeAtRoot && new TypeInfo({name: key});
+  const result = [];
+
+  // Process each item in parentData
+  // Use a for loop for performance reasons
+  for (let i = 0; i < parentData.length; i++) {
+    const __path__ = parentData[i]?.__path__;
+
+    // Wrap the data item in a ResourceNode for consistent type handling
+    const res = makeResNode(parentData[i], null,
+      __path__?.path, null, __path__?.fhirNodeDataType, model);
+
+    // TODO: refactor after discussing in FHIR chat
+    // LEGACY: Check if the resourceType property matches the key
+    // This maintains backward compatibility with expressions like "Observation"
+    // when the data has resourceType: "Observation"
+    if (res.data?.resourceType === key) {
+      result.push(res);
+    } else
+    // ROOT-LEVEL TYPE CHECKING: Check if this is a root-level type filter
+    // This enables expressions like "Observation.code", "Resource.id", or
+    // "select(Coding.code)"
+    if (
+      // Must be marked as a root-level invocation
+      (astNodeAtRoot === 1 ||
+        // For function parameters (atRoot === 2), verify we're actually at
+        // the root by checking if current context ($this) matches the data root
+        astNodeAtRoot === 2 && (ctx.$index !== undefined ? ctx.dataRoot[ctx.$index] === ctx.$this[0] : ctx.dataRoot === ctx.$this)) &&
+      // Verify the current item's type matches the specified type name
+      res.getTypeInfo().is(possibleTypeInfo, model)
+    ) {
+      // Type matches: return the item itself rather than extracting children
+      result.push(res);
+    } else {
+      // Regular member access: extract child nodes for the specified key
+      util.pushFn(result, util.makeChildResNodes(res, key, model));
+    }
   }
+
+  return result;
 };
 
 engine.IndexerExpression = function(ctx, parentData, node) {

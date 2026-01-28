@@ -3,6 +3,13 @@
 This log documents significant changes for each release.  This project follows
 [Semantic Versioning](http://semver.org/).
 
+## [4.8.4] - 2026-01-27
+### Fixed
+- Root type name support in expression prefixes: now expressions like
+  `Resource.id` or `DomainResource.text` work as expected. We can also evaluate
+  an expression started with type name for a part of the resource, for example,
+  `Coding.code` for values of type `Coding`.
+
 ## [4.8.3] - 2026-01-13
 ### Changes
 - Applied changes in the specification regarding Quantity comparisons.
