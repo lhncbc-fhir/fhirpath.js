@@ -136,8 +136,9 @@ const generateTest = (test, testResource) => {
 };
 
 const generateGroup = (group, testResource) => {
-  const groupName = _.first(_.keys(_.omit(group, 'disable')));
-  const getTestGroupData = () => group[groupName].map(test => addType(test)).map(
+  const groupKey = _.first(_.keys(_.omit(group, 'disable')));
+  const groupName = groupKey.replace(/^group:*\s*/g, '');
+  const getTestGroupData = () => group[groupKey].map(test => addType(test)).map(
     test => isGroup(test) ? generateGroup(test, testResource) : generateTest(test, testResource));
   switch (group.type) {
   case 'skipped':
@@ -163,7 +164,7 @@ const addType = (entity) => {
 
 // Tests whether the given test is a group.
 function isGroup(test) {
-  return (_.keys(test).some(key => key.startsWith('group')));
+  return (_.keys(test).some(key => key.startsWith('group:')));
 }
 
 const generateSuite = (fileName, testcase) => {
