@@ -452,26 +452,14 @@ engine.InvocationTerm = function(ctx, parentData, node) {
   return engine.doEval(ctx,parentData, node.children[0]);
 };
 
+
 /**
  * Evaluates a MemberInvocation node in the FHIRPath AST.
  *
- * For each item in parentData, creates a ResourceNode and either:
- *   - Pushes the ResourceNode itself if it matches the type specified
- *     by astNode.atRoot,
- *   - Or pushes its child ResourceNodes for the given key.
- * Handles root-level type checks and child member resolution.
- *
- * @param {Object} ctx - The evaluation context.
- * @param {Array} parentData - The array of parent data items.
- * @param {Object} astNode - The AST node representing the MemberInvocation.
- * @returns {Array} - An array of resolved ResourceNodes or child nodes.
- */
-/**
- * Evaluates a MemberInvocation node in the FHIRPath AST.
- *
- * This function handles member access in FHIRPath expressions (e.g., "code", "Observation.code").
- * It supports both regular member access and root-level type filtering, where expressions
- * can start with a FHIR type name to filter items by type.
+ * This function handles member access in FHIRPath expressions (e.g., "code",
+ * "Observation.code"). It supports both regular member access and root-level
+ * type filtering, where expressions can start with a FHIR type name to filter
+ * items by type.
  *
  * The function processes each item in parentData and:
  * 1. Wraps it in a ResourceNode for consistent handling

@@ -59,7 +59,8 @@ class PathListener extends Listener {
   }
 
   /**
-   * Creates and enters a new AST node and adds it to the parent's children.
+   * Creates and adds a new abstract syntax tree (AST) node to the list of child
+   * nodes of a previously created parent AST node.
    * Marks MemberInvocation nodes that appear at the root level of
    * an InvocationTerm to enable proper type-based filtering during evaluation.
    *
