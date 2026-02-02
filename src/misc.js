@@ -309,7 +309,8 @@ engine.toString = function(coll){
  *
  * If the input collection contains multiple items, the evaluation of the
  * expression will end and signal an error to the calling environment.
- * If the input collection is empty, the result is an empty collection.
+ * If the input collection is empty, the result is an empty collection (in this
+ * case an undefined value).
  *
  * See:
  * https://hl7.org/fhirpath/#todate-date
@@ -367,7 +368,8 @@ engine.toDate = function(coll) {
  *
  * If the input collection contains multiple items, the evaluation of the
  * expression will end and signal an error to the calling environment.
- * If the input collection is empty, the result is an empty collection.
+ * If the input collection is empty, the result is an empty collection (in this
+ * case an undefined value).
  *
  * See:
  * https://hl7.org/fhirpath/#todatetime-datetime
@@ -416,7 +418,8 @@ engine.toDateTime = function(coll) {
  *
  * If the input collection contains multiple items, the evaluation of the
  * expression will end and signal an error to the calling environment.
- * If the input collection is empty, the result is an empty collection.
+ * If the input collection is empty, the result is an empty collection (in this
+ * case an undefined value).
  *
  * See:
  * https://hl7.org/fhirpath/#totime-time
