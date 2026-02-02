@@ -514,11 +514,10 @@ engine.MemberInvocation = function(ctx, parentData, astNode ) {
     // when the data has resourceType: "Observation"
     if (res.data?.resourceType === key) {
       result.push(res);
-    } else
-    // ROOT-LEVEL TYPE CHECKING: Check if this is a root-level type filter
-    // This enables expressions like "Observation.code", "Resource.id", or
-    // "select(Coding.code)"
-    if (
+    } else if (
+      // ROOT-LEVEL TYPE CHECKING: Check if this is a root-level type filter
+      // This enables expressions like "Observation.code", "Resource.id", or
+      // "select(Coding.code)".
       // Must be marked as a root-level invocation
       (astNodeAtRoot === 1 ||
         // For function parameters (atRoot === 2), verify we're actually at
