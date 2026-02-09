@@ -3,7 +3,7 @@
 This log documents significant changes for each release.  This project follows
 [Semantic Versioning](http://semver.org/).
 
-## [4.8.4] - 2026-01-28
+## [4.8.5] - 2026-01-28
 ### Fixed
 - Fixed toDate(), toDateTime(), and toTime() conversion functions to support
   conversion from their corresponding FHIRPath type instances in addition to
@@ -13,6 +13,13 @@ This log documents significant changes for each release.  This project follows
   - toDateTime() now accepts DateTime instances (returns as-is) and Date
     instances (converts to DateTime)
   - toTime() now accepts Time instances (returns as-is)
+
+## [4.8.4] - 2026-01-27
+### Fixed
+- Root type name support in expression prefixes: now expressions like
+  `Resource.id` or `DomainResource.text` work as expected. We can also evaluate
+  an expression started with type name for a part of the resource, for example,
+  `Coding.code` for values of type `Coding`.
 
 ## [4.8.3] - 2026-01-13
 ### Changes
