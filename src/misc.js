@@ -3,9 +3,8 @@
 // specification).
 
 var util = require("./utilities");
-var types = require("./types");
 
-const { FP_Quantity, TypeInfo } = types;
+const { FP_Quantity, TypeInfo, FP_DateTime, FP_Date, FP_Time } = require("./types");
 
 var engine = {};
 
@@ -298,7 +297,6 @@ engine.toString = function(coll){
   return rtn;
 };
 
-
 /**
  * Converts the input collection to an FP_Date value.
  *
@@ -307,10 +305,9 @@ engine.toString = function(coll){
  * the value of the date portion of the FP_DateTime. If the input is a string
  * that is convertible to an FP_Date, the result is that FP_Date value.
  *
- * If the input collection contains multiple items, the evaluation of the
- * expression will end and signal an error to the calling environment.
- * If the input collection is empty, the result is an empty collection (in this
- * case an undefined value).
+ * If the input collection contains multiple items, an error will be thrown.
+ * If the input collection is empty or the input string cannot be converted,
+ * the result is undefined.
  *
  * See:
  * https://hl7.org/fhirpath/#todate-date
@@ -329,25 +326,22 @@ engine.toDate = function(coll) {
     const v = util.valData(coll[0]);
 
     // Check if the value is already FP_Date
-    if (v instanceof types.FP_Date) {
+    if (v instanceof FP_Date) {
       rtn = v;
     }
     // Convert from FP_DateTime by extracting date portion
-    else if (v instanceof types.FP_DateTime) {
+    else if (v instanceof FP_DateTime) {
       // Upcoming spec says: "without timezone conversion/normalization"
       // Also, see this topic:
       // https://chat.fhir.org/#narrow/channel/179266-fhirpath/topic/Converting.20from.20DateTime.20type.20to.20Date.20type
       // In case we need to apply timezone, we can use the following code:
       // const dateStr = v._getPrecision() <= 2 ? v.asStr : FP_DateTime.isoDateTime(v._getDateObj(),2)
       const dateStr = v.asStr.split('T')[0];
-      const t = types.FP_Date.checkString(dateStr);
-      if (t) {
-        rtn = t;
-      }
+      rtn = new FP_Date(dateStr);
     }
     // Convert from string
     else if (typeof v === "string") {
-      const t = types.FP_Date.checkString(v);
+      const t = FP_Date.checkString(v);
       if (t) {
         rtn = t;
       }
@@ -366,10 +360,9 @@ engine.toDate = function(coll) {
  * to zero). If the input is a string that is convertible to an FP_DateTime, the
  * result is that FP_DateTime value.
  *
- * If the input collection contains multiple items, the evaluation of the
- * expression will end and signal an error to the calling environment.
- * If the input collection is empty, the result is an empty collection (in this
- * case an undefined value).
+ * If the input collection contains multiple items, an error will be thrown.
+ * If the input collection is empty or the input string cannot be converted,
+ * the result is undefined.
  *
  * See:
  * https://hl7.org/fhirpath/#todatetime-datetime
@@ -387,19 +380,16 @@ engine.toDateTime = function(coll) {
     const v = util.valData(coll[0]);
 
     // Check if the value is already FP_DateTime
-    if (v instanceof types.FP_DateTime) {
+    if (v instanceof FP_DateTime) {
       rtn = v;
     }
     // Convert from FP_Date (date string is valid as datetime string)
-    else if (v instanceof types.FP_Date) {
-      const t = types.FP_DateTime.checkString(v.asStr);
-      if (t) {
-        rtn = t;
-      }
+    else if (v instanceof FP_Date) {
+      rtn = new FP_DateTime(v.asStr);
     }
     // Convert from string
     else if (typeof v === "string") {
-      const t = types.FP_DateTime.checkString(v);
+      const t = FP_DateTime.checkString(v);
       if (t) {
         rtn = t;
       }
@@ -416,10 +406,9 @@ engine.toDateTime = function(coll) {
  * is that FP_Time. If the input is a string that is convertible to an FP_Time,
  * the result is that FP_Time value.
  *
- * If the input collection contains multiple items, the evaluation of the
- * expression will end and signal an error to the calling environment.
- * If the input collection is empty, the result is an empty collection (in this
- * case an undefined value).
+ * If the input collection contains multiple items, an error will be thrown.
+ * If the input collection is empty or the input string cannot be converted,
+ * the result is undefined.
  *
  * See:
  * https://hl7.org/fhirpath/#totime-time
@@ -437,12 +426,12 @@ engine.toTime = function(coll) {
     const v = util.valData(coll[0]);
 
     // Check if the value is already FP_Time
-    if (v instanceof types.FP_Time) {
+    if (v instanceof FP_Time) {
       rtn = v;
     }
     // Convert from string
     else if (typeof v === "string") {
-      const t = types.FP_Time.checkString(v);
+      const t = FP_Time.checkString(v);
       if (t) {
         rtn = t;
       }
