@@ -3,6 +3,17 @@
 This log documents significant changes for each release.  This project follows
 [Semantic Versioning](http://semver.org/).
 
+## [4.8.5] - 2026-01-28
+### Fixed
+- Fixed toDate(), toDateTime(), and toTime() conversion functions to support
+  conversion from their corresponding FHIRPath type instances in addition to
+  strings:
+  - toDate() now accepts Date instances (returns as-is) and DateTime
+    instances (extracts date portion)
+  - toDateTime() now accepts DateTime instances (returns as-is) and Date
+    instances (converts to DateTime)
+  - toTime() now accepts Time instances (returns as-is)
+
 ## [4.8.4] - 2026-01-27
 ### Fixed
 - Root type name support in expression prefixes: now expressions like

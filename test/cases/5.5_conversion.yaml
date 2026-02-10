@@ -125,7 +125,61 @@ tests:
     error: [true]
 
 
-  - 'group: toDateTime':
+  - 'group: toDate() : Date':
+      - expression: "'2015-02-04'.toDate()=@2015-02-04"
+        result: [true]
+
+      - expression: "'2015-02'.toDate()=@2015-02"
+        result: [true]
+
+      - expression: "'2015'.toDate()=@2015"
+        result: [true]
+
+      - description: "Date to Date returns same value"
+        expression: "@2015-02-04.toDate()=@2015-02-04"
+        result: [true]
+
+      - description: "DateTime to Date extracts date portion"
+        expression: "@2015-02-04T14:34:28.toDate()=@2015-02-04"
+        result: [true]
+
+      - description: "DateTime with a date that differs from the local time zone to Date"
+        expression: "@2015-02-04T14:34:28+10:00.toDate() = @2015-02-04"
+        result: [true]
+
+      - description: "DateTime with the same date in the local time zone to Date"
+        expression: "@2015-02-04T14:34:28Z.toDate() = @2015-02-04"
+        result: [true]
+
+      - description: "Year-month DateTime to Date preserves precision"
+        expression: "@2015-02.toDate()=@2015-02"
+        result: [true]
+
+      - description: "Invalid date string returns empty"
+        expression: "'not-a-date'.toDate()"
+        result: []
+
+      - description: "Time string cannot convert to Date"
+        expression: "'14:34:28'.toDate()"
+        result: []
+
+      - description: "Empty collection returns empty"
+        expression: "{}.toDate()"
+        result: []
+
+      - description: "Multiple items throws error"
+        expression: "('2015-02-04' | '2015-02-05').toDate()"
+        error: true
+
+      - desc: '** Null to date'
+        expression: Functions.collWithNullsAndTrue[0].toDate()
+        result: []
+
+      - description: "toDate result is a Date type"
+        expression: "'2015-02-04'.toDate() is Date"
+        result: [true]
+
+  - 'group: toDateTime() : DateTime':
     - desc: equality
       expression: "datetime.toDateTime() = @2019-02-06T19:17-05:00"
       result: [true]
@@ -134,11 +188,69 @@ tests:
       expression: "datetime.toDateTime() = @2010-02-06T19:17-05:00"
       result: [false]
 
-  - desc: '** Null to dateTime'
-    expression: Functions.collWithNullsAndTrue[0].toDateTime()
-    result: []
+    - expression: "'2015-02-04T14:34:28'.toDateTime()=@2015-02-04T14:34:28"
+      result: [ true ]
 
-  - 'group: toTime':
+    - expression: "'2015-02-04T14:34:28+10:00'.toDateTime()=@2015-02-04T14:34:28+10:00"
+      result: [ true ]
+
+    - expression: "'2015-02-04T14:34:28Z'.toDateTime()=@2015-02-04T14:34:28Z"
+      result: [ true ]
+
+    - expression: "'2015-02-04'.toDateTime()=@2015-02-04"
+      result: [ true ]
+
+    - expression: "'2015-02'.toDateTime()=@2015-02"
+      result: [ true ]
+
+    - expression: "'2015'.toDateTime()=@2015"
+      result: [ true ]
+
+    - description: "DateTime to DateTime returns same value"
+      expression: "@2015-02-04T14:34:28.toDateTime()=@2015-02-04T14:34:28"
+      result: [ true ]
+
+    - description: "DateTime with timezone to DateTime returns same value"
+      expression: "@2015-02-04T14:34:28+10:00.toDateTime()=@2015-02-04T14:34:28+10:00"
+      result: [ true ]
+
+    - description: "Date to DateTime preserves date value"
+      expression: "@2015-02-04.toDateTime()=@2015-02-04"
+      result: [ true ]
+
+    - description: "Year-month Date to DateTime"
+      expression: "@2015-02.toDateTime()=@2015-02"
+      result: [ true ]
+
+    - description: "Year-only Date to DateTime"
+      expression: "@2015.toDateTime()=@2015"
+      result: [ true ]
+
+    - description: "Invalid datetime string returns empty"
+      expression: "'not-a-datetime'.toDateTime()"
+      result: [ ]
+
+    - description: "Time string cannot convert to DateTime"
+      expression: "'14:34:28'.toDateTime()"
+      result: [ ]
+
+    - description: "Empty collection returns empty"
+      expression: "{}.toDateTime()"
+      result: [ ]
+
+    - description: "Multiple items throws error"
+      expression: "('2015-02-04' | '2015-02-05').toDateTime()"
+      error: true
+
+    - desc: '** Null to dateTime'
+      expression: Functions.collWithNullsAndTrue[0].toDateTime()
+      result: []
+
+    - description: "toDateTime result is a DateTime type"
+      expression: "'2015-02-04T14:34:28'.toDateTime() is DateTime"
+      result: [true]
+
+  - 'group: toTime() : Time':
     - desc: equality
       expression: "time.toTime() = @T19:15"
       result: [true]
@@ -151,13 +263,60 @@ tests:
       expression: "time.toTime() != @T18:15"
       result: [true]
 
+    - expression: "'14:34:28'.toTime()=@T14:34:28"
+      result: [true]
+
+    - expression: "'14:34:28.123'.toTime()=@T14:34:28.123"
+      result: [true]
+
+    - expression: "'14:34'.toTime()=@T14:34"
+      result: [true]
+
+    - expression: "'14'.toTime()=@T14"
+      result: [true]
+
+    - expression: "'T14:34:28'.toTime()=@T14:34:28"
+      result: [true]
+
+    - description: "Time to Time returns same value"
+      expression: "@T14:34:28.toTime()=@T14:34:28"
+      result: [true]
+
+    - description: "Time with milliseconds to Time"
+      expression: "@T14:34:28.123.toTime()=@T14:34:28.123"
+      result: [true]
+
+    - description: "Hour-minute Time to Time"
+      expression: "@T14:34.toTime()=@T14:34"
+      result: [true]
+
+    - description: "Invalid time string returns empty"
+      expression: "'not-a-time'.toTime()"
+      result: []
+
+    - description: "Date string cannot convert to Time"
+      expression: "'2015-02-04'.toTime()"
+      result: []
+
+    - description: "DateTime string cannot convert to Time"
+      expression: "'2015-02-04T14:34:28'.toTime()"
+      result: []
+
+    - description: "Empty collection returns empty"
+      expression: "{}.toTime()"
+      result: []
+
+    - description: "Multiple items throws error"
+      expression: "('14:34:28' | '15:34:28').toTime()"
+      error: true
+
     - desc: '** Null to time'
       expression: Functions.collWithNullsAndTrue[0].toTime()
       result: []
 
-  - desc: '** Null to date'
-    expression: Functions.collWithNullsAndTrue[0].toDate()
-    result: []
+    - description: "toTime result is a Time type"
+      expression: "'14:34:28'.toTime() is Time"
+      result: [true]
 
   - desc: '** Null to boolean'
     expression: Functions.collWithNullsAndTrue[0].toBoolean()

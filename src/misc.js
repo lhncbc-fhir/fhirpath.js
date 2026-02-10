@@ -3,9 +3,8 @@
 // specification).
 
 var util = require("./utilities");
-var types = require("./types");
 
-const { FP_Quantity, TypeInfo } = types;
+const { FP_Quantity, TypeInfo, FP_DateTime, FP_Date, FP_Time } = require("./types");
 
 var engine = {};
 
@@ -298,33 +297,149 @@ engine.toString = function(coll){
   return rtn;
 };
 
-
 /**
- *  Defines a function on engine called to+timeType (e.g., toDateTime, etc.).
- * @param timeType The string name of a class for a time type (e.g. "FP_DateTime").
+ * Converts the input collection to an FP_Date value.
+ *
+ * If the input collection contains a single item that is an FP_Date, the result
+ * is that FP_Date. If the input is an FP_DateTime, the result is an FP_Date with
+ * the value of the date portion of the FP_DateTime. If the input is a string
+ * that is convertible to an FP_Date, the result is that FP_Date value.
+ *
+ * If the input collection contains multiple items, an error will be thrown.
+ * If the input collection is empty or the input string cannot be converted,
+ * the result is undefined.
+ *
+ * See:
+ * https://hl7.org/fhirpath/#todate-date
+ * https://build.fhir.org/ig/HL7/FHIRPath/#todate--date
+ *
+ * @param {Array} coll - The input collection
+ * @returns {FP_Date|undefined} - Returns FP_Date if conversion is successful,
+ *  undefined otherwise (which will be converted to an empty collection)
  */
-function defineTimeConverter(timeType) {
-  let timeName = timeType.slice(3); // Remove 'FP_'
-  engine['to'+timeName] = function(coll) {
-    let rtn;
-    //  If the input collection contains multiple items, the evaluation of
-    //  the expression will end and signal an error to the calling environment.
-    //  If the input collection is empty, the result is an empty collection.
-    if (checkSingleton(coll, 'to'+timeName)) {
-      const v = util.valData(coll[0]);
-      if (typeof v === "string") {
-        const t = types[timeType].checkString(v);
-        if (t) {
-          rtn = t;
-        }
+engine.toDate = function(coll) {
+  let rtn;
+  //  If the input collection contains multiple items, the evaluation of
+  //  the expression will end and signal an error to the calling environment.
+  //  If the input collection is empty, the result is an empty collection.
+  if (checkSingleton(coll, 'toDate')) {
+    const v = util.valData(coll[0]);
+
+    // Check if the value is already FP_Date
+    if (v instanceof FP_Date) {
+      rtn = v;
+    }
+    // Convert from FP_DateTime by extracting date portion
+    else if (v instanceof FP_DateTime) {
+      // Upcoming spec says: "without timezone conversion/normalization"
+      // Also, see this topic:
+      // https://chat.fhir.org/#narrow/channel/179266-fhirpath/topic/Converting.20from.20DateTime.20type.20to.20Date.20type
+      // In case we need to apply timezone, we can use the following code:
+      // const dateStr = v._getPrecision() <= 2 ? v.asStr : FP_DateTime.isoDateTime(v._getDateObj(),2)
+      const dateStr = v.asStr.split('T')[0];
+      rtn = new FP_Date(dateStr);
+    }
+    // Convert from string
+    else if (typeof v === "string") {
+      const t = FP_Date.checkString(v);
+      if (t) {
+        rtn = t;
       }
     }
-    return rtn;
-  };
-}
-defineTimeConverter('FP_Date');
-defineTimeConverter('FP_DateTime');
-defineTimeConverter('FP_Time');
+  }
+  return rtn;
+};
+
+
+/**
+ * Converts the input collection to an FP_DateTime value.
+ *
+ * If the input collection contains a single item that is an FP_DateTime, the
+ * result is that FP_DateTime. If the input is an FP_Date, the result is an
+ * FP_DateTime with the value of the FP_Date and the time components empty (not set
+ * to zero). If the input is a string that is convertible to an FP_DateTime, the
+ * result is that FP_DateTime value.
+ *
+ * If the input collection contains multiple items, an error will be thrown.
+ * If the input collection is empty or the input string cannot be converted,
+ * the result is undefined.
+ *
+ * See:
+ * https://hl7.org/fhirpath/#todatetime-datetime
+ *
+ * @param {Array} coll - The input collection
+ * @returns {FP_DateTime|undefined} - Returns FP_DateTime if conversion is successful,
+ *  undefined otherwise (which will be converted to an empty collection)
+ */
+engine.toDateTime = function(coll) {
+  let rtn;
+  //  If the input collection contains multiple items, the evaluation of
+  //  the expression will end and signal an error to the calling environment.
+  //  If the input collection is empty, the result is an empty collection.
+  if (checkSingleton(coll, 'toDateTime')) {
+    const v = util.valData(coll[0]);
+
+    // Check if the value is already FP_DateTime
+    if (v instanceof FP_DateTime) {
+      rtn = v;
+    }
+    // Convert from FP_Date (date string is valid as datetime string)
+    else if (v instanceof FP_Date) {
+      rtn = new FP_DateTime(v.asStr);
+    }
+    // Convert from string
+    else if (typeof v === "string") {
+      const t = FP_DateTime.checkString(v);
+      if (t) {
+        rtn = t;
+      }
+    }
+  }
+  return rtn;
+};
+
+
+/**
+ * Converts the input collection to an FP_Time value.
+ *
+ * If the input collection contains a single item that is an FP_Time, the result
+ * is that FP_Time. If the input is a string that is convertible to an FP_Time,
+ * the result is that FP_Time value.
+ *
+ * If the input collection contains multiple items, an error will be thrown.
+ * If the input collection is empty or the input string cannot be converted,
+ * the result is undefined.
+ *
+ * See:
+ * https://hl7.org/fhirpath/#totime-time
+ *
+ * @param {Array} coll - The input collection
+ * @returns {FP_Time|undefined} - Returns FP_Time if conversion is successful,
+ *  undefined otherwise (which will be converted to an empty collection)
+ */
+engine.toTime = function(coll) {
+  let rtn;
+  //  If the input collection contains multiple items, the evaluation of
+  //  the expression will end and signal an error to the calling environment.
+  //  If the input collection is empty, the result is an empty collection.
+  if (checkSingleton(coll, 'toTime')) {
+    const v = util.valData(coll[0]);
+
+    // Check if the value is already FP_Time
+    if (v instanceof FP_Time) {
+      rtn = v;
+    }
+    // Convert from string
+    else if (typeof v === "string") {
+      const t = FP_Time.checkString(v);
+      if (t) {
+        rtn = t;
+      }
+    }
+  }
+  return rtn;
+};
+
 
 // Possible string values convertible to the true boolean value
 const trueStrings = ['true', 't', 'yes', 'y', '1', '1.0'].reduce((acc, val) => {
