@@ -2742,8 +2742,6 @@ class TypeInfo {
     }
   }
 
-  // The "model" data object specific to a domain, e.g. R4.
-  static model = null;
 
   /**
    * Checks for equality with another TypeInfo object, or that another TypeInfo

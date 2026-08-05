@@ -648,7 +648,8 @@ fhirpath --expression '0.1 + 0.2' --resourceJSON '{}' --mathMode native
 
 Internal FHIRPath types can be left unresolved with
 `--no-resolveInternalTypes`. By default, CLI output resolves them to standard
-JavaScript types.
+JavaScript types. Unresolved output is printed up to a nesting depth of 4;
+deeper values are displayed as `[Object]`.
 
 Also, you can pass in a filename or a string of JSON representing a part of the resource.
 In that case, you should pass in the base path from which this part of the resource was extracted.
