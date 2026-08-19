@@ -742,6 +742,23 @@ Supported [Additional functions](https://hl7.org/fhir/fhirpath.html#functions) f
 - resolve() : collection
 - memberOf(valueset : string) : Boolean
 - comparable(quantity) : boolean
+- htmlChecks() : Boolean - checks a single `xhtml` element (or, per
+  [FHIR-56303](https://jira.hl7.org/browse/FHIR-56303), a `string` whose
+  contents are treated as the content of a `div`) against the
+  [rules around HTML usage](https://build.fhir.org/narrative.html#rules). The
+  types derived from `string` (`code`, `id` and `markdown`) are checked as div
+  content as well; every other kind of element, including the `uri`-derived
+  types, returns an empty collection. The narrative must be well-formed XHTML:
+  all elements closed, all attribute values quoted, only legal XML characters,
+  and the `div` must have some non-whitespace content. Namespace prefixes are
+  not supported: a default `xmlns` declaration is accepted on any element as
+  long as it declares the XHTML namespace, while `xmlns:<prefix>` and prefixed
+  attribute names such as `xml:lang` are rejected. `htmlchecks()` is
+  accepted as an alias, because that is how the STU3 `Narrative.div`
+  invariants spell it; this is not general case-insensitivity. See
+  [description of the htmlChecks() function](docs/html-checks.md) for the full
+  rule list. Note that this function only validates the narrative; it is not an
+  HTML sanitizer and must not be relied upon as a defense against XSS.
 
 Supported [Terminology Service APIs](https://build.fhir.org/fhirpath.html#txapi):
 - %terminologies.expand(valueSet, params) : ValueSet

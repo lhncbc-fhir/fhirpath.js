@@ -42,7 +42,17 @@ module.exports = [
       // Require semicolons at the end of statements
       semi: ['error', 'always'],
       // Warn on console.log usage (allow in production-critical paths)
-      'no-console': 'warn'
+      'no-console': 'warn',
+      // IE11, which the browser build still targets (see
+      // browser-build/webpack.config.js), accepts the constructor argument of
+      // Set/Map and silently ignores it, so an iterable argument yields an
+      // empty collection instead of a failure.
+      'no-restricted-syntax': ['error', {
+        selector: 'NewExpression[callee.name=/^(Set|Map|WeakSet|WeakMap)$/]' +
+          '[arguments.length>0]',
+        message: 'IE11 ignores the iterable argument of Set/Map; populate ' +
+          'the collection with .add()/.set() instead.'
+      }]
     }
   }
 ];
