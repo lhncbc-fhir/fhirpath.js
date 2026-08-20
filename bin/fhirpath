@@ -50,12 +50,12 @@ FP_Type.prototype[inspect.custom] = function(depth, options, inspectValue) {
   if (typeof depth === 'number' && depth < 0) {
     return options.stylize('[' + this.constructor.name + ']', 'special');
   }
-  const inspectedValue = {...this};
-  if (inspectedValue.ctx) {
-    inspectedValue.ctx = '[Context omitted]';
+  const valueToInspect = {...this};
+  if (valueToInspect.ctx) {
+    valueToInspect.ctx = '[Context omitted]';
   }
   return this.constructor.name + ' ' +
-    inspectValue(inspectedValue, getNestedInspectOptions(depth, options));
+    inspectValue(valueToInspect, getNestedInspectOptions(depth, options));
 };
 
 
@@ -79,7 +79,7 @@ ResourceNode.prototype[inspect.custom] = function(depth, options, inspectValue) 
     return options.stylize('[ResourceNode]', 'special');
   }
 
-  const inspectedValue = {
+  const valueToInspect = {
     path: this.path,
     fhirNodeDataType: this.fhirNodeDataType,
     propName: this.propName,
@@ -89,13 +89,13 @@ ResourceNode.prototype[inspect.custom] = function(depth, options, inspectValue) 
     'parentResNode?.path': this.parentResNode?.path ?? null
   };
   if (this.ctx) {
-    inspectedValue.ctx = '[Context omitted]';
+    valueToInspect.ctx = '[Context omitted]';
   }
   if (this.model) {
-    inspectedValue.model = '[FHIR model omitted]';
+    valueToInspect.model = '[FHIR model omitted]';
   }
   return 'ResourceNode ' +
-    inspectValue(inspectedValue, getNestedInspectOptions(depth, options));
+    inspectValue(valueToInspect, getNestedInspectOptions(depth, options));
 };
 
 
