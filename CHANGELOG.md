@@ -3,6 +3,21 @@
 This log documents significant changes for each release.  This project follows
 [Semantic Versioning](http://semver.org/).
 
+## [5.1.2] - 2026-08-25
+### Fixed
+- The `fhirpath` CLI no longer recursively prints the evaluation context of
+  `FP_Type` values when `--no-resolveInternalTypes`/`-n` is used.
+- The custom inspection functions used by the `fhirpath` CLI no longer restart
+  the depth count when printing the contents of `FP_Type` and `ResourceNode`
+  values, so nested values are no longer printed deeper than requested.
+
+### Changed
+- The `fhirpath` CLI now prints `--no-resolveInternalTypes`/`-n` output up to a
+  nesting depth of 4; deeper values are displayed as `[Object]`.
+
+### Removed
+- Removed the unused static `TypeInfo.model` field.
+
 ## [5.1.1] - 2026-08-05
 ### Changed
 - Documented how to use the standard `%resource` environment variable with the

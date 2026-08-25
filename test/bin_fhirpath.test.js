@@ -77,10 +77,47 @@ describe ('bin/fhirpath', function () {
   });
 
   it ('should accept the -n parameter to disable resolving internal types', function() {
-    checkOutput(
-      "bin/fhirpath -e '@2018-02-18T12:23:45-05:00' -r '{}' -n",
-      /FP_DateTime/
+    const output = runFhirpath(
+      "bin/fhirpath -e '@2018-02-18T12:23:45-05:00' -r '{}' -n"
     );
+
+    expect(output).toMatch(/FP_DateTime/);
+    expect(output).toMatch(/ctx: '\[Context omitted\]'/);
+  });
+
+  it ('should not print the evaluation context with the -n parameter', function() {
+    const output = runFhirpath(
+      "bin/fhirpath -e '@2018-02-18T12:23:45-05:00' -n -m r4 "
+      + "-r '{\"resourceType\":\"Patient\",\"id\":\"secret-id\"}' "
+      + "-v '{\"v1\":\"secret-var\"}' "
+      + "-t 'https://user:pass@ts.example' -s 'https://fhir.example'"
+    );
+
+    expect(output).toMatch(/ctx: '\[Context omitted\]'/);
+    // The evaluation context must not reach standard output: the server URLs
+    // (which may embed credentials), the variables, the input resource, and
+    // the FHIR model.
+    expect(output).not.toMatch(/ts\.example|fhir\.example/);
+    expect(output).not.toMatch(/secret-var|secret-id/);
+    expect(output).not.toMatch(/path2Type|choiceTypePaths/);
+  });
+
+  it ('should limit the depth of the output of internal structures', function() {
+    const output = runFhirpath(
+      "bin/fhirpath -e 'Patient' -m r4 -n -r '{\"resourceType\":\"Patient\","
+      + "\"contact\":[{\"organization\":{\"identifier\":{\"assigner\":"
+      + "{\"display\":\"Acme\"}}}}]}'"
+    );
+
+    expect(output).toMatch(/ResourceNode/);
+    expect(output).toMatch(/ctx: '\[Context omitted\]'/);
+    expect(output).toMatch(/model: '\[FHIR model omitted\]'/);
+    // Values nested deeper than the output depth limit are not printed.
+    // Truncation happens exactly one level below the printed contents of the
+    // ResourceNode; if the depth count were restarted for the ResourceNode,
+    // "organization" would still be expanded.
+    expect(output).toMatch(/organization: \[Object\]/);
+    expect(output).not.toMatch(/Acme/);
   });
 
   it ('should accept the -t option repeated for multiple terminology servers', function() {
