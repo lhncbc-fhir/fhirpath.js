@@ -52,6 +52,7 @@ let navigation= require("./navigation");
 let datetime  = require("./datetime");
 let additional  = require("./additional");
 let logic  = require("./logic");
+const htmlChecks = require("./html-checks");
 const types = require("./types");
 const {
   FP_Date, FP_DateTime, FP_Time, FP_Quantity, ucumUtils,
@@ -134,6 +135,13 @@ engine.invocationTable = {
   toQuantity:   {fn: misc.toQuantity, arity: {0: [], 1: ["String"]}},
   hasValue:     {fn: misc.hasValueFn},
   getValue:     {fn: misc.getValueFn},
+  htmlChecks:   {fn: htmlChecks.htmlChecksFn},
+  // The STU3 `Narrative.div` invariants txt-1 and txt-2 spell this function
+  // `htmlchecks()`, whereas R4 and R5 use `htmlChecks()`. FHIRPath is
+  // case-sensitive, so the STU3 spelling is registered as an alias to keep
+  // those invariants evaluable. This is the only alias of its kind - function
+  // names are not case-insensitive.
+  htmlchecks:   {fn: htmlChecks.htmlChecksFn},
   pathname:     {fn: misc.pathnameFn, arity: {0: [], 1: ["Boolean"]}},
   convertsToBoolean:    {fn: misc.createConvertsToFn(misc.toBoolean, 'boolean')},
   convertsToInteger:    {fn: misc.createConvertsToFn(misc.toInteger, 'number')},

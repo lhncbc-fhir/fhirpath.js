@@ -3,18 +3,33 @@
 This log documents significant changes for each release.  This project follows
 [Semantic Versioning](http://semver.org/).
 
-## [5.1.2] - 2026-08-25
+## [5.2.0] - 2026-08-25
+### Added
+- Support for the `htmlChecks()` function, which validates a single `xhtml`
+  element (whose root element must be a `div`) or a single `string` (whose
+  contents are checked as the content of a `div`) against the FHIR rules
+  around HTML usage. The types derived from `string` (`code`, `id` and
+  `markdown`) are checked as the content of a `div` as well. The result is an
+  empty collection for any other kind of element or for a collection of
+  elements.
+  The narrative must be well-formed XHTML, so `<br>` and other unclosed
+  elements, unquoted attribute values, attributes without a value, HTML
+  entities such as `&nbsp;` and namespace-prefixed names such as `xml:lang` or
+  `xmlns:xhtml` are rejected; an unprefixed `xmlns` declaration is accepted on
+  any element, but only when it declares the XHTML namespace.
+  `htmlchecks()` is accepted as an alias, because that is how the STU3
+  `Narrative.div` invariants spell it.
+  See [docs/html-checks.md](docs/html-checks.md) for the full rule list and
+  for how the rules are interpreted.
 ### Fixed
 - The `fhirpath` CLI no longer recursively prints the evaluation context of
   `FP_Type` values when `--no-resolveInternalTypes`/`-n` is used.
 - The custom inspection functions used by the `fhirpath` CLI no longer restart
   the depth count when printing the contents of `FP_Type` and `ResourceNode`
   values, so nested values are no longer printed deeper than requested.
-
 ### Changed
 - The `fhirpath` CLI now prints `--no-resolveInternalTypes`/`-n` output up to a
   nesting depth of 4; deeper values are displayed as `[Object]`.
-
 ### Removed
 - Removed the unused static `TypeInfo.model` field.
 
