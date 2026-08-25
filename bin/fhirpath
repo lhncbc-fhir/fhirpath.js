@@ -6,29 +6,98 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const { Command, Option } = require('commander');
 const { inspect } = require('node:util');
-const { ResourceNode } = require('../src/types');
+const { FP_Type, ResourceNode } = require('../src/types');
+
+
+/**
+ * Returns the inspection options for the object that a custom inspect function
+ * passes to util.inspect() in place of the original value. Such a call
+ * restarts the depth count in util.inspect(), so the maximum depth must be
+ * replaced with the depth remaining for the original value. Otherwise, nested
+ * values are printed deeper than requested, and structures with reference
+ * cycles are printed endlessly. A non-numeric depth (null means unlimited
+ * depth) is passed through unchanged.
+ * @param {number|null} depth - the remaining depth of the inspection, or null
+ *  if the depth is unlimited
+ * @param {Object} options - the options for the inspection
+ * @returns {Object}
+ */
+function getNestedInspectOptions(depth, options) {
+  return typeof depth === 'number' ? {...options, depth} : options;
+}
+
+
+/**
+ * Custom inspect function for FP_Type to provide a more readable output when
+ * using console.dir or util.inspect.
+ * Note that the object passed to inspectValue() is a copy of this object, so
+ * util.inspect() cannot detect reference cycles that pass through an FP_Type
+ * value. This is safe as long as these invariants hold:
+ *  - the only reference to the evaluation context ("ctx") is replaced below;
+ *  - the remaining own properties of FP_Type subclasses are created by the
+ *    engine and have no back references (e.g. FP_Quantity._calendarEquivalent
+ *    is one-way).
+ * @param {number|null} depth - the remaining depth of the inspection, or null
+ *  if the depth is unlimited
+ * @param {Object} options - the options for the inspection
+ * @param {Function} inspectValue - the function to inspect the value
+ * @returns {string}
+ */
+FP_Type.prototype[inspect.custom] = function(depth, options, inspectValue) {
+  // util.inspect() calls a custom inspect function even for values below the
+  // requested depth, so the cutoff that util.inspect() applies to ordinary
+  // objects must be reproduced here.
+  if (typeof depth === 'number' && depth < 0) {
+    return options.stylize('[' + this.constructor.name + ']', 'special');
+  }
+  const valueToInspect = {...this};
+  if (valueToInspect.ctx) {
+    valueToInspect.ctx = '[Context omitted]';
+  }
+  return this.constructor.name + ' ' +
+    inspectValue(valueToInspect, getNestedInspectOptions(depth, options));
+};
+
 
 /**
  * Custom inspect function for ResourceNode to provide a more readable output
  * when using console.dir or util.inspect.
- * @param {number} depth - the depth of the inspection
+ * See the note about reference cycles for the FP_Type custom inspect function
+ * above; for ResourceNode, the properties that could create a cycle ("ctx",
+ * "model", and "parentResNode") are replaced below, and "data"/"_data" come
+ * from parsed JSON, which cannot contain cycles.
+ * @param {number|null} depth - the remaining depth of the inspection, or null
+ *  if the depth is unlimited
  * @param {Object} options - the options for the inspection
  * @param {Function} inspectValue - the function to inspect the value
  * @returns {string}
  */
 ResourceNode.prototype[inspect.custom] = function(depth, options, inspectValue) {
-  return 'ResourceNode ' + inspectValue({
+  // See the note about the depth cutoff for the FP_Type custom inspect
+  // function above.
+  if (typeof depth === 'number' && depth < 0) {
+    return options.stylize('[ResourceNode]', 'special');
+  }
+
+  const valueToInspect = {
     path: this.path,
     fhirNodeDataType: this.fhirNodeDataType,
     propName: this.propName,
     index: this.index,
     data: this.data,
     _data: this._data,
-    parentPath: this.parentResNode?.path ?? null,
-    ctx: this.ctx ? '[Context omitted]' : null,
-    model: this.model ? '[FHIR model omitted]' : null
-  }, options);
+    'parentResNode?.path': this.parentResNode?.path ?? null
+  };
+  if (this.ctx) {
+    valueToInspect.ctx = '[Context omitted]';
+  }
+  if (this.model) {
+    valueToInspect.model = '[FHIR model omitted]';
+  }
+  return 'ResourceNode ' +
+    inspectValue(valueToInspect, getNestedInspectOptions(depth, options));
 };
+
 
 const program = new Command();
 
@@ -112,7 +181,7 @@ function printResult(expression, result, useCustomInspect) {
   console.log('fhirpath(' + expression + ') =>');
   if (useCustomInspect) {
     console.dir(result, {
-      depth: null,
+      depth: 4,
       colors: process.stdout.isTTY,
       customInspect: true
     });
