@@ -3,7 +3,7 @@
 This log documents significant changes for each release.  This project follows
 [Semantic Versioning](http://semver.org/).
 
-## [5.1.1] - 2026-08-05
+## [5.1.2] - 2026-08-25
 ### Fixed
 - The `fhirpath` CLI no longer recursively prints the evaluation context of
   `FP_Type` values when `--no-resolveInternalTypes`/`-n` is used.
@@ -17,6 +17,16 @@ This log documents significant changes for each release.  This project follows
 
 ### Removed
 - Removed the unused static `TypeInfo.model` field.
+
+## [5.1.1] - 2026-08-05
+### Changed
+- Documented how to use the standard `%resource` environment variable with the
+  `evaluate()` method in `README.md`.
+### Fixed
+- `extension(url)` now finds matching extensions when it is invoked directly
+  on a plain root object without `resourceType` or path metadata. Previously it
+  returned an empty collection instead of behaving like the equivalent
+  `.extension.where(url = string)` expression.
 
 ## [5.1.0] - 2026-07-29
 ### Added
